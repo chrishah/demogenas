@@ -1,0 +1,56 @@
+samples: "data/testdata/test.data.csv"
+
+#####
+illumina_assembly_input: ["tri"] #, "tri-cor", "tri-mer", "tri-cor-mer"]
+
+### short read trimming
+illumina_trimming: ["trim_galore"]
+
+### short read error correction
+illumina_correction: ["bless"] #, "spades"]
+
+### short read merging
+illumina_merge: ["usearch"]
+
+#ont basecallers
+basecaller: ["guppy", "flappie"]  #, "flappie", "guppy"] #"bonito"]
+ont_basecalling:
+   concurrency: 100
+   minlength: 300
+
+#long read correction
+long_correction: ["ratatosk", "canu"] #"ratatosk", "consent", "canu"]
+
+### short read assembly
+assembler: ["abyss", "minia", "platanus", "spades", "haslr", "flye", "canu"] #, "canu"] #, "spades", "platanus"]
+#assembler: ["haslr"] #, "spades", "platanus"]
+
+blessfindk:
+   startk: 21
+
+kmc:
+   max_mem_in_GB: 8
+   k: [21] #,31,41,51,61,71]
+   mincount: 2
+   maxcount: 1000000000
+   maxcounter: 255
+
+default_k: [51]
+ectools:
+   ec_concurrency: 100
+   reads_per_file: 100
+   files_per_dir: 10
+   unitig_similarity: [0.98, 1.0]
+   minlength_in: 1000
+   minlength_out: 900
+
+abyss:
+   assembly_to_scaffold: "tricormer" #may also be "tri-bestk" or others
+
+threads:
+   trimmomatic: 24
+   kmc: 5
+   ec_blessfindk: 90
+   ec_blesspe: 20
+   ec_blessse: 10
+   mergepairs_usearch: 20
