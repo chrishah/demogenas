@@ -60,16 +60,17 @@ rule long_correct:
 
 rule assemble:
 	input:
-		expand("results/{sample}/assembly/quast/quast.ok", sample=df["sample"])
-
+		expand(rules.quast.output, sample=df["sample"])
+		
 #illumina_units = units[units["sample"].isin(df_fastq["sample"].tolist()+df_bam["sample"].tolist())]
-rule assemble_short:
-	input:
-		expand("results/{test.sample}/assembly/quast/quast.ok", test=illumina_units.itertuples())
+#rule assemble_short:
+#	input:
+#		expand(rules.quast.output, sample=Illumina_process_df["sample"])
 
-rule assemble_long:
-	input:
-		expand("results/{test.sample}/assembly/quast/quast.ok", test=fast5_units.itertuples(), basecaller=config["basecaller"])
+#rule assemble_long:
+#	input:
+#		expand("results/{test.sample}/assembly/quast/quast.ok", test=fast5_units.itertuples(), basecaller=config["basecaller"])
+
 
 s_with_ass = find_samples_with_assemblies(all_samples)
 #print(s_with_ass)

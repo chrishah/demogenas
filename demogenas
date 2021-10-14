@@ -11,10 +11,10 @@ usage() {
 	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all
 	-m trim_illumina
 	-m eval_illumina
-	-m assemble_short
-	-m assemble_long
 	-m assemble
 	-m evalutate"
+#	-m assemble_short
+#	-m assemble_long
         echo "  -t <submission_system> Specify available submission system. Options: sge, slurm, torque, serial (no submission system)."
         echo -e "\nOptional:"
 	echo "  --dry Invokes a dry-run. Corresponds to: snakemake -n"
@@ -102,10 +102,10 @@ if [[ $RUNMODE == "trim_illumina" ]]; then
 	mycmd+=(illumina_trim)
 elif [[ $RUNMODE == "eval_illumina" ]]; then
 	mycmd+=(eval_illumina)
-elif [[ $RUNMODE == "assemble_short" ]]; then
-	mycmd+=(assemble_short)
-elif [[ $RUNMODE == "assemble_long" ]]; then
-	mycmd+=(assemble_long)
+#elif [[ $RUNMODE == "assemble_short" ]]; then
+#	mycmd+=(assemble_short)
+#elif [[ $RUNMODE == "assemble_long" ]]; then
+#	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
 	mycmd+=(assemble)
 elif [[ $RUNMODE == "evaluate" ]]; then
