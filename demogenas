@@ -8,19 +8,32 @@ usage() {
         echo "Usage: $0 [-m <runmode>] [-t <submission_system>] [-c <cluster_config_file>] [-v]"
         echo
         echo "Mandatory:"
-	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all"
+	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all
+	-m trim_illumina
+	-m eval_illumina
+	-m assemble_short
+	-m assemble_long
+	-m assemble
+	-m evalutate"
         echo "  -t <submission_system> Specify available submission system. Options: sge, slurm, torque, serial (no submission system)."
         echo -e "\nOptional:"
-	echo "  -c <cluster_config_file> Path to cluster config file in YAML format (required if submission system != serial). "
+	echo "  --dry Invokes a dry-run. Corresponds to: snakemake -n"
+	echo "  --configfile=<file>. Path to configfile (default: data/config.yaml)"
+	echo "  --clusterconfig=<cluster_config_file> Path to cluster config file in YAML format (required if submission system != serial). "
+	echo "  --threads=<int>. Number of threads (for runmode 'serial' - default: all available)"
+	echo "  --select=<string>. Specific samples to run pipeline for (from samples file)."
         echo -e "\nExpert:"
         echo "  -s <snakemake_args> Additional arguments passed on to the snakemake command (optional)."
         echo "  -i \"<singularity_args>\" Additional arguments passed on to singularity (optional)."
 	echo
-	echo "  --dry Invokes a dry-run. Corresponds to: snakemake -n"
-	echo "  --reset. Use this option to cancel all remaining jobs from this snakemake command without cancelling other cluster jobs. This is useful if any jobs fail to produce the desired output."
-	#echo "  --report This creates an overview report of the run."
-	#echo "  --setup Will download the genomes and prepare the pipeline to run."
-	#echo "  --remove Resets the pipeline. Will delete all results, logs and checkpoints."
+	echo -e "\nExamples:"
+	echo "Start serial run for all samples in the samples file:"
+	echo "./demogenas -m assemble -t serial --threads=8 --configfile=data/testdata/test.config.yaml --dry"
+	echo "Start serial run for two samples:"
+	echo "./demogenas -m assemble -t serial --threads=8 --configfile=data/testdata/test.config.yaml --select=fastq_only,bam_only --dry"
+	echo "Submit on SLURM cluster for one sample:"
+	echo "./demogenas -m assemble -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/testdata/test.config.yaml --select=fast5_only --dry"
+
 	echo
         1>&2; exit 1; }
 
@@ -29,7 +42,7 @@ version() {
         exit 0
 }
 CLUSTER=""
-CLUSTER_CONFIg=""
+CLUSTER_CONFIG=""
 SETUP=""
 REPORT=""
 DRY=""
@@ -40,19 +53,19 @@ commit=$(git rev-parse --short HEAD)
 STDSMARGS="--notemp --latency-wait 60"
 CFILE="data/config.yaml"
 
-while getopts ":m:vt:c:s:i:-:" option;
+while getopts ":m:vt:s:i:-:" option;
         do
                 case "${option}"
                 in
                         m) RUNMODE=${OPTARG};;
                         t) CLUSTER=${OPTARG};;
-                        c) CLUSTER_CONFIG=${OPTARG};;
                         s) SM_ARGS=${OPTARG};;
                         i) SI_ARGS=${OPTARG};;
                         v) version;;
 			-) LONG_OPTARG="${OPTARG#*}"
 				case $OPTARG in
 					dry) DRY="-n" ;;
+                        		clusterconfig=*) CLUSTER_CONFIG=${OPTARG#*=};;
 					threads=*) THREADS=${OPTARG#*=};;
 					select=*) SELECT=${OPTARG#*=};;
 					configfile=*) CFILE=${OPTARG#*=};;
@@ -84,32 +97,32 @@ if [[ $RESET == "TRUE" ]]; then
 	exit 0
 fi
 #echo $RESET
-basecmd="snakemake"
+mycmd+=(snakemake)
 if [[ $RUNMODE == "trim_illumina" ]]; then
-	basecmd=$basecmd" illumina_trim"
+	mycmd+=(illumina_trim)
 elif [[ $RUNMODE == "eval_illumina" ]]; then
-	basecmd=$basecmd" eval_illumina"
+	mycmd+=(eval_illumina)
 elif [[ $RUNMODE == "assemble_short" ]]; then
-	basecmd=$basecmd" assemble_short"
+	mycmd+=(assemble_short)
 elif [[ $RUNMODE == "assemble_long" ]]; then
-	basecmd=$basecmd" assemble_long"
+	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
-	basecmd=$basecmd" assemble"
+	mycmd+=(assemble)
 elif [[ $RUNMODE == "evaluate" ]]; then
-	basecmd=$basecmd" quastall"
+	mycmd+=(quastall)
 else
 	echo "Runmode not recognized: "$RUNMODE
 	exit 1
 fi
-basecmd=$basecmd" --configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY"
-if [[ ! -z "$SI_ARGS" ]]; then basecmd=$basecmd" --singularity-args \"$SI_ARGS\""; fi
+mycmd+=(--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY)
+if [[ ! -z "$SI_ARGS" ]]; then mycmd+=(--singularity-args \""$SI_ARGS\""); fi
 
 if [[ $CLUSTER == "slurm" ]]; then
-	basecmd=$basecmd" --cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit/immediate_submit.py {dependencies} slurm' --immediate-submit"
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} slurm'\' --immediate-submit)
   elif [[ $CLUSTER == "sge" ]]; then
-        basecmd=$basecmd" --cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit/immediate_submit.py {dependencies} sge' --immediate-submit"
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} sge'\' --immediate-submit)
   elif [[ $CLUSTER == "torque" ]]; then
-        basecmd=$basecmd" --cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit/immediate_submit.py {dependencies} torque' --immediate-submit"
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} torque'\' --immediate-submit)
   else
   	if [[ $CLUSTER != "serial" ]]; then
 		echo "Submission system not recognized"
@@ -118,8 +131,15 @@ if [[ $CLUSTER == "slurm" ]]; then
 fi
 
 #specify selection
-if [[ ! -z $SELECT ]]; then basecmd=$basecmd" --config select=\""$SELECT"\""; fi
+if [[ ! -z $SELECT ]]; then mycmd+=(--config select=\""$SELECT\""); fi
+
+#report
+echo -e "[$(date)]\tSnakemake command to be executed:"
+echo -e "[$(date)]\t${mycmd[@]}"
+#for value in "${mycmd[@]}"
+#do
+#     echo $value
+#done
 
 #execute
-echo $basecmd
-
+"${mycmd[@]}"
