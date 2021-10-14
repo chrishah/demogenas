@@ -118,11 +118,11 @@ mycmd+=(--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS 
 if [[ ! -z "$SI_ARGS" ]]; then mycmd+=(--singularity-args \""$SI_ARGS\""); fi
 
 if [[ $CLUSTER == "slurm" ]]; then
-	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} slurm'\' --immediate-submit)
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} slurm' --immediate-submit)
   elif [[ $CLUSTER == "sge" ]]; then
-	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} sge'\' --immediate-submit)
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} sge' --immediate-submit)
   elif [[ $CLUSTER == "torque" ]]; then
-	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster \''$(pwd)/bin/immediate_submit.py {dependencies} torque'\' --immediate-submit)
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} torque' --immediate-submit)
   else
   	if [[ $CLUSTER != "serial" ]]; then
 		echo "Submission system not recognized"
@@ -133,9 +133,12 @@ fi
 #specify selection
 if [[ ! -z $SELECT ]]; then mycmd+=(--config select=\""$SELECT\""); fi
 
+
 #report
+#the command as saved in the array is converted to a variable and ticks are added just to display the command correctly - internally the bash script understands without the ticks
+cmdprint=$(echo "${mycmd[@]}" | sed "s/--cluster /--cluster '/" | sed "s/ --immediate-submit/' --immediate-submit/")
 echo -e "[$(date)]\tSnakemake command to be executed:"
-echo -e "[$(date)]\t${mycmd[@]}"
+echo -e "[$(date)]\t$cmdprint"
 #for value in "${mycmd[@]}"
 #do
 #     echo $value
