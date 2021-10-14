@@ -16,8 +16,6 @@ rule quast:
 		echo "{input}" 1> {log.stdout} 2> {log.stderr}
 		touch {output.ok}
 		"""
-#		expand("results/{{sample}}/assembly/{assinput}/{assembler}/bestk/{assembler}.ok", sample=illumina_units["sample"], assinput=config["illumina_assembly_input"], assembler=config["illumina_assembler"])
-#		["results/Lmino/assembly/tri/minia/bestk/minia.ok", "results/Lmino/assembly/tri/abyss/bestk/abyss.ok"]
 
 rule just_quast:
 	input:

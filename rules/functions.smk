@@ -257,7 +257,6 @@ def find_samples_with_assemblies(all_samples):
 	lis = []
 	for s in all_samples:
 		nfiles = 0
-		print ("sample: "+s)
 		for ass in config["assembler"]:
 			file = ass+".ok"
 			for root, dirs, files in os.walk("results/"+s+"/assembly/"):
@@ -266,6 +265,7 @@ def find_samples_with_assemblies(all_samples):
 					break
 		if nfiles > 0:
 			lis.append(s)
+	print("Assemblies found for the following samples: "+str(lis))
 	return lis
 			
 			
