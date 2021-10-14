@@ -9,6 +9,9 @@ __default__:
    time: "00:10:00"
    output: $(pwd)/log/%x-%j.stdout.txt
    error: $(pwd)/log/%x-%j.stderr.txt
+eval_illumina:
+   J: EVI
+   time: "00:00:10"
 quast:
    J: QUA
    time: "01:00:00"
