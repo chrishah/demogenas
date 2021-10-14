@@ -72,7 +72,7 @@ rule assemble_long:
 		expand("results/{test.sample}/assembly/quast/quast.ok", test=fast5_units.itertuples(), basecaller=config["basecaller"])
 
 s_with_ass = find_samples_with_assemblies(all_samples)
-print(s_with_ass)
+#print(s_with_ass)
 rule quastall:
 	input:
 		expand(rules.just_quast.output, sample=s_with_ass)
