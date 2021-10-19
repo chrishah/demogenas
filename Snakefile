@@ -2,7 +2,7 @@
 
 #get stuff from config file
 k = config["default_k"]
-ec_concurrency = config["ectools"]["ec_concurrency"]
+#ec_concurrency = config["ectools"]["ec_concurrency"]
 abyss_ass_to_scaffold = config["abyss"]["assembly_to_scaffold"]
 assinput = config["illumina_assembly_input"]
 longcor = config["long_correction"]
@@ -48,11 +48,11 @@ rule correct_illumina:
 
 rule ont_call:
 	input:
-		expand("results/{units.sample}/reads/ont/{basecaller}/{units.lib}/{units.sample}.{basecaller}.{unit}.fastq.gz", basecaller=config["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
+		expand("results/{units.sample}/reads/ont/{basecaller}/{units.lib}/{units.sample}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
 		
 rule long_correct:
 	input:
-		expand("results/{units.sample}/errorcorrection/{longcor}/{basecaller}/{units.sample}.{basecaller}.{longcor}.fastq.gz", units=fast5_units.itertuples(), longcor=config["long_correction"], basecaller=config["basecaller"])
+		expand("results/{units.sample}/errorcorrection/{longcor}/{basecaller}/{units.sample}.{basecaller}.{longcor}.fastq.gz", units=fast5_units.itertuples(), longcor=config["long_correction"], basecaller=config["ont_basecalling"]["basecaller"])
 
 
 #rule long_correct_dev:

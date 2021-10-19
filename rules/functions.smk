@@ -221,17 +221,17 @@ def gather_corrected_by_lib(wildcards):
 	return lis
 
 #creat list for paralllel steps
-ec_unit_list = range(1,ec_concurrency+1)
+#ec_unit_list = range(1,ec_concurrency+1)
 flappie_unit_list = range(1,config["ont_basecalling"]["concurrency"]+1)
 
-def control_illumina_ec(samples):
+def control_illumina_ec(wildcards):
 	lis = []
 	for ass in config["illumina_correction"]:
 		if ass == "spades":
-			lis.append("results/{sample}/errorcorrection/spades/spades-correct.ok".format(sample=samples))
+			lis.append("results/{sample}/errorcorrection/spades/spades-correct.ok".format(sample=wildcards.sample))
 		if ass == "bless":
-			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-se.done".format(sample=samples))
-			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-pe.done".format(sample=samples))
+			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-se.done".format(sample=wildcards.sample))
+			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-pe.done".format(sample=wildcards.sample))
 	print(lis)
 	return lis
 
