@@ -406,8 +406,8 @@ rule canu_correct:
 ##		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
 ##		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
 ##		long = get_long_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/{basecaller}/{{lib}}/{{sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["basecaller"], unit=flappie_unit_list)
-##		long = expand("results/{{units.sample}}/reads/ont/{basecaller}/{{units.lib}}/{{units.sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
+#		long = expand("results/{{sample}}/reads/ont/{basecaller}/{{lib}}/{{sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], unit=flappie_unit_list)
+##		long = expand("results/{{units.sample}}/reads/ont/{basecaller}/{{units.lib}}/{{units.sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
 #	output:
 #		fastq = "results/{sample}/errorcorrection/ratatosk/{basecaller}/{lib}/{sample}.{basecaller}.ratatosk.fastq.gz"
 #	log:

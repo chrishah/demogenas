@@ -23,7 +23,7 @@ rule sort_bam:
 		sample = "{sample}",
 		lib = "{lib}",
 		targetdir = "results/{sample}/Illumina/raw_reads/from_bam/{lib}/"
-	threads: 3
+	threads: config["threads"]["samtools"]
 	singularity: "docker://reslp/samtools:1.11"
 	shadow: "minimal"
 	shell:
@@ -331,51 +331,6 @@ rule ec_blessse:
 		rm {params.lib}.se.fastq
 		ln -s $(pwd)/{params.sampleID}.{params.lib}.corrected.fastq.gz {params.wd}/{output}
 		"""
-rule setup_usearch:
-	output:
-		"bin/usearch"
-	shadow: "minimal"
-	shell:
-		"""
-		wget https://www.drive5.com/downloads/usearch11.0.667_i86linux32.gz
-		gunzip -v $(find ./ -name "*gz")
-		chmod a+x $(find ./ -name "*linux32")
-		mv $(find ./ -name "*linux32") {output}
-		"""
-
-rule mergepairs_usearch:
-	input:
-		cf = rules.ec_blesspe.output.cf,
-		cr = rules.ec_blesspe.output.cr,
-		usearch = rules.setup_usearch.output
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-		lib = "{lib}",
-		batchsize = "4000000"
-	threads: config["threads"]["mergepairs_usearch"]
-	singularity:
-		"docker://chrishah/usearch-docker-onbuild:v012020"
-	log:
-		stdout = "results/{sample}/logs/usearch.{sample}.{lib}.stdout.txt",
-		stderr = "results/{sample}/logs/usearch.{sample}.{lib}.stderr.txt"
-	output:
-		merged = "results/{sample}/readmerging/usearch/{lib}/{sample}.{lib}.merged.fastq.gz",
-		nm1 = "results/{sample}/readmerging/usearch/{lib}/{sample}.{lib}_1.nm.fastq.gz",
-		nm2 = "results/{sample}/readmerging/usearch/{lib}/{sample}.{lib}_2.nm.fastq.gz",
-	shadow: "minimal"
-	shell:
-		"""
-		export TMPDIR={params.wd}/tmp
-		export PATH=$PATH:$(pwd)/bin
-
-		usearch_mergepairs.sh {input.cf} {params.wd}/{input.cr} {params.sample}.{params.lib} {threads} {params.batchsize} 1> {log.stdout} 2> {log.stderr}
-		cp *.fastq.gz results/{params.sample}/readmerging/usearch/{params.lib}/
-		
-		echo -e "###\\n$(date)\\tLogs from individual usearch runs:\\n" >> {log.stdout}
-		cat merging.log >> {log.stdout}
-		"""
-
 rule plot_k_hist:
 	input:
 		hist = rules.kmc.output.hist,

@@ -179,12 +179,6 @@ abyss_rescaffold_corrected:
    qos: mem_0768
    partition: mem_0768
    time: "10:00:00"
-correct_spades:
-   J: CSP
-   N: 1
-   qos: mem_0768
-   partition: mem_0768
-   time: "12:00:00"
 spades_flappie:
    J: SPF
    N: 1
@@ -253,10 +247,10 @@ prepare_fastq:
 sort_bam:
    J: SOB
    mem: "6G"
-   time: "24:00:00"
+   time: "02:00:00"
 bam2fastq:
    J: B2F
-   time: "24:00:00"
+   time: "02:00:00"
 fastqc_raw:
    J: FQR
    time: "02:00:00"
@@ -271,25 +265,39 @@ reformat_read_headers:
 trim_trimgalore:
    J: TRI
    mem: "10G"
-   time: "20:00:00"
+   time: "10:00:00"
 clean_trimmed_libs:
    J: CTL
    time: "00:00:10"
 kmc:
    J: KMC
-   time: "1:00:00"
-ec_blessfindk:
-   J: BFK
-   time: "72:00:00"
-ec_blesspe:
+   time: "01:00:00"
+bless_by_k:
+   J: BBK
+   time: "10:00:00"
+   mem: 20G
+bless_pe:
    J: BPE
    time: "24:00:00"
-ec_blessse:
+   mem: 20G
+bless_se:
    J: BSE
    time: "24:00:00"
-clean_corrected_libs:
-   J: CCL
-   time: "00:30:00"
+   mem: 20G
+find_best_bless:
+   J: FBK
+   time: "00:00:10"
+correct_spades:
+   J: CSP
+   N: 1
+   time: "05:00:00"
+   mem: 90G
+gather_illumina_corrected:
+   J: GIC
+   time: "00:00:10"
+correct_illumina:
+   J: CIL
+   time: "00:00:10"
 setup_usearch:
    J: SUS
    mem: "2G"
@@ -304,7 +312,7 @@ clean_merged_libs:
 stats:
    J: STA
    mem: "4G"
-   time: "00:01:00"
+   time: "00:10:00"
 plot_k_hist:
    J: PKH
    mem: "2G"
