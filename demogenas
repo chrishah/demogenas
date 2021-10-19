@@ -69,6 +69,7 @@ while getopts ":m:vt:s:i:-:" option;
 					threads=*) THREADS=${OPTARG#*=};;
 					select=*) SELECT=${OPTARG#*=};;
 					configfile=*) CFILE=${OPTARG#*=};;
+					verbose) VERBOSE="-pr" ;;
 					'' ) break ;;
 					*) echo "Illegal option --$OPTARG" >&2; usage; exit 2 ;;
 				esac ;;	
@@ -98,31 +99,40 @@ if [[ $RESET == "TRUE" ]]; then
 fi
 #echo $RESET
 mycmd+=(snakemake)
+printcmd="snakemake "
 if [[ $RUNMODE == "trim_illumina" ]]; then
 	mycmd+=(illumina_trim)
+	printcmd=$printcmd"illumina_trim "
 elif [[ $RUNMODE == "eval_illumina" ]]; then
 	mycmd+=(eval_illumina)
+	printcmd=$printcmd"eval_illumina "
 #elif [[ $RUNMODE == "assemble_short" ]]; then
 #	mycmd+=(assemble_short)
 #elif [[ $RUNMODE == "assemble_long" ]]; then
 #	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
 	mycmd+=(assemble)
+	printcmd=$printcmd"assemble "
 elif [[ $RUNMODE == "evaluate" ]]; then
 	mycmd+=(quastall)
+	printcmd=$printcmd"quastall "
 else
 	echo "Runmode not recognized: "$RUNMODE
 	exit 1
 fi
-mycmd+=(--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY)
-if [[ ! -z "$SI_ARGS" ]]; then mycmd+=(--singularity-args \""$SI_ARGS\""); fi
+mycmd+=(--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY $VERBOSE)
+printcmd=$printcmd"--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY $VERBOSE "
+if [[ ! -z "$SI_ARGS" ]]; then mycmd+=(--singularity-args "$SI_ARGS"); printcmd=$printcmd"--singularity-args \"$SI_ARGS\" "; fi
 
 if [[ $CLUSTER == "slurm" ]]; then
 	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} slurm' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} slurm' --immediate-submit "
   elif [[ $CLUSTER == "sge" ]]; then
 	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} sge' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} sge' --immediate-submit "
   elif [[ $CLUSTER == "torque" ]]; then
 	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} torque' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} torque' --immediate-submit "
   else
   	if [[ $CLUSTER != "serial" ]]; then
 		echo "Submission system not recognized"
@@ -131,14 +141,12 @@ if [[ $CLUSTER == "slurm" ]]; then
 fi
 
 #specify selection
-if [[ ! -z $SELECT ]]; then mycmd+=(--config select=\""$SELECT\""); fi
+if [[ ! -z $SELECT ]]; then mycmd+=(--config select=\""$SELECT\""); printcmd=$printcmd"--config select=\"$SELECT\"";fi
 
 
 #report
-#the command as saved in the array is converted to a variable and ticks are added just to display the command correctly - internally the bash script understands without the ticks
-cmdprint=$(echo "${mycmd[@]}" | sed "s/--cluster /--cluster '/" | sed "s/ --immediate-submit/' --immediate-submit/")
 echo -e "[$(date)]\tSnakemake command to be executed:"
-echo -e "[$(date)]\t$cmdprint"
+echo -e "[$(date)]\t$printcmd"
 #for value in "${mycmd[@]}"
 #do
 #     echo $value
