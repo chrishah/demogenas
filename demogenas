@@ -11,6 +11,7 @@ usage() {
 	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all
 	-m trim_illumina
 	-m eval_illumina
+	-m correct_illumina
 	-m assemble
 	-m evalutate"
 #	-m assemble_short
@@ -106,6 +107,9 @@ if [[ $RUNMODE == "trim_illumina" ]]; then
 elif [[ $RUNMODE == "eval_illumina" ]]; then
 	mycmd+=(eval_illumina)
 	printcmd=$printcmd"eval_illumina "
+elif [[ $RUNMODE == "correct_illumina" ]]; then
+	mycmd+=(correct_illumina --until gather_illumina_corrected)
+	printcmd=$printcmd"correct_illumina --until gather_illumina_corrected"
 #elif [[ $RUNMODE == "assemble_short" ]]; then
 #	mycmd+=(assemble_short)
 #elif [[ $RUNMODE == "assemble_long" ]]; then

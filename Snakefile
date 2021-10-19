@@ -44,7 +44,8 @@ rule illumina_trim:
 
 rule correct_illumina:
 	input:
-		expand("results/{test.sample}/errorcorrection/spades/spades-correct.ok", test=illumina_units.itertuples())
+		expand(rules.gather_illumina_corrected.output, sample=Illumina_process_df["sample"])
+
 rule ont_call:
 	input:
 		expand("results/{units.sample}/reads/ont/{basecaller}/{units.lib}/{units.sample}.{basecaller}.{unit}.fastq.gz", basecaller=config["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),

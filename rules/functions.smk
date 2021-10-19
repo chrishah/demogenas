@@ -224,6 +224,17 @@ def gather_corrected_by_lib(wildcards):
 ec_unit_list = range(1,ec_concurrency+1)
 flappie_unit_list = range(1,config["ont_basecalling"]["concurrency"]+1)
 
+def control_illumina_ec(samples):
+	lis = []
+	for ass in config["illumina_correction"]:
+		if ass == "spades":
+			lis.append("results/{sample}/errorcorrection/spades/spades-correct.ok".format(sample=samples))
+		if ass == "bless":
+			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-se.done".format(sample=samples))
+			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-pe.done".format(sample=samples))
+	print(lis)
+	return lis
+
 def get_illumina_assembly_input(wildcards):
 	lis = []
 #	print(wildcards.assinput)
@@ -287,7 +298,7 @@ def gather_assemblies(wildcards):
 
 			#further assemblers that require fast5 data as input AND fastq reads for correction or alike
 			if wildcards.sample in df_fast5["sample"].tolist():
-				for basecaller in config["basecaller"]:
+				for basecaller in config["ont_basecalling"]["basecaller"]:
 					if "haslr" in config["assembler"]:
 						lis.append("results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
 					if "abyss" in config["assembler"]:
@@ -302,7 +313,7 @@ def gather_assemblies(wildcards):
 								lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcorrection}/spades.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
 
 	#assemblers that do only with fast5 data
-	for basecaller in config["basecaller"]:
+	for basecaller in config["ont_basecalling"]["basecaller"]:
 		if "canu" in config["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/canu/raw/{basecaller}/canu.ok".format(sample=wildcards["sample"], basecaller=basecaller))
@@ -323,7 +334,7 @@ def get_long_assembly_input(wildcards):
 		if str(u.sample) == wildcards.sample:
 			lib = u.lib
 #			print("\tinput for %s and %s" %(u.sample, u.lib))
-#			for basecaller in config["basecaller"]:
+#			for basecaller in config["ont_basecalling"]["basecaller"]:
 			for unit in flappie_unit_list:
 				lis.append("results/{sample}/reads/ont/{basecaller}/{lib}/{sample}.{basecaller}.{unit}.fastq.gz".format(sample=wildcards.sample, lib=lib, basecaller=wildcards.basecaller, unit=unit))
 	print(lis)
@@ -337,7 +348,7 @@ def get_long_assembly_input(wildcards):
 #		if str(u.sample) == wildcards.sample:
 #			lib = u.lib
 ##			print("\tinput for %s and %s" %(u.sample, u.lib))
-#			for basecaller in config["basecaller"]:
+#			for basecaller in config["ont_basecalling"]["basecaller"]:
 #					lis.append("results/{sample}/errorcorrection/{longcorrection}/{sample}.{longcorrection}.fastq.gz".format(sample=wildcards.sample, basecaller=basecaller, longcorrection=wildcards.longcor))
 #	print(lis)
 #	return lis
