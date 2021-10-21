@@ -1,18 +1,15 @@
-samples: "data/data.csv.Sylvia-genome"
-
-#####
-illumina_assembly_input: ["tri"] #, "tri-cor", "tri-mer", "tri-cor-mer"]
+samples: "data/testdata/test.data.csv"
 
 ### short read trimming
-illumina_trimming: ["trim_galore"]
+illumina_trimming: ["trimgalore"]
 
 ### short read error correction
 illumina_correction: ["bless", "spades"]
 
 ### short read merging
 illumina_merge:
-   merger: ["usearch"]
-   merge_at_stage: ["tri", "tri-cor"]
+   merger: ["usearch"] #, "flash"]
+   merge_at_stage: ["trimmed", "corrected"] #could be "trimmed", "corrected" or both
 
 #ont basecallers
 ont_basecalling:
@@ -33,10 +30,12 @@ kmc:
    maxcounter: 255
 
 ### short read assembly
-assembler: ["abyss", "minia", "platanus", "spades", "haslr", "flye", "canu"] #, "canu"] #, "spades", "platanus"]
+assemble: 
+   assembler: ["abyss", "minia", "platanus", "spades", "haslr", "flye", "canu"] 
+   assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
+   default_k: [51]
 #assembler: ["haslr"] #, "spades", "platanus"]
 
-default_k: [51]
 
 #ectools:
 #   ec_concurrency: 100
@@ -56,3 +55,7 @@ threads:
    bless: 20
    spades_correct: 90
    mergepairs_usearch: 20
+   abyss: 90
+   minia: 10
+   platanus: 90
+   spades: 90
