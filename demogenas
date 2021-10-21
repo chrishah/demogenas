@@ -12,6 +12,7 @@ usage() {
 	-m trim_illumina
 	-m eval_illumina
 	-m correct_illumina
+	-m merge_illumina
 	-m assemble
 	-m evalutate"
 #	-m assemble_short
@@ -109,14 +110,17 @@ elif [[ $RUNMODE == "eval_illumina" ]]; then
 	printcmd=$printcmd"eval_illumina "
 elif [[ $RUNMODE == "correct_illumina" ]]; then
 	mycmd+=(correct_illumina --until gather_illumina_corrected)
-	printcmd=$printcmd"correct_illumina --until gather_illumina_corrected"
+	printcmd=$printcmd"correct_illumina --until gather_illumina_corrected "
+elif [[ $RUNMODE == "merge_illumina" ]]; then
+	mycmd+=(merge_illumina --until gather_illumina_merged)
+	printcmd=$printcmd"merge_illumina --until gather_illumina_merged "
 #elif [[ $RUNMODE == "assemble_short" ]]; then
 #	mycmd+=(assemble_short)
 #elif [[ $RUNMODE == "assemble_long" ]]; then
 #	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
-	mycmd+=(assemble)
-	printcmd=$printcmd"assemble "
+	mycmd+=(assemble --until quast)
+	printcmd=$printcmd"assemble --until quast "
 elif [[ $RUNMODE == "evaluate" ]]; then
 	mycmd+=(quastall)
 	printcmd=$printcmd"quastall "
