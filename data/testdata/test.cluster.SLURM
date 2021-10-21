@@ -290,8 +290,9 @@ find_best_bless:
 correct_spades:
    J: CSP
    N: 1
+   qos: mem_0384
+   partition: mem_0384
    time: "05:00:00"
-   mem: 90G
 gather_illumina_corrected:
    J: GIC
    time: "00:00:10"
@@ -302,10 +303,14 @@ setup_usearch:
    J: SUS
    mem: "2G"
    time: "00:10:00"
-mergepairs_usearch:
-   J: MER
+usearch:
+   J: MUS
    mem: "20G"
-   time: "24:00:00"
+   time: "05:00:00"
+gather_illumina_merged:
+   J: GIM
+   mem: "4G"
+   time: "00:00:10"
 clean_merged_libs:
    J: CML
    time: "00:30:00"
