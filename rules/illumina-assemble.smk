@@ -1,17 +1,45 @@
+#the next block determines which combinations of trimmer-corrector-merger are considered for assembly
+#it reads the lists of trimmers, correctors and mergers in from the config files
+#then adds these if the particular stage (trimmed and/or corrected and/or merged) is specified
+
+if "merged" in config["assemble"]["assemble_at_stage"]:
+	merge_list = list(config["illumina_merge"]["merger"])
+else:
+	merge_list = ["None"]
+
+if "corrected" in config["assemble"]["assemble_at_stage"]:
+	correct_list = list(config["illumina_correction"])
+	if not "None" in merge_list:
+		merge_list.append("None")
+else:
+	if "corrected" in config["illumina_merge"]["merge_at_stage"] and "merged" in config["assemble"]["assemble_at_stage"]:
+		correct_list = list(config["illumina_correction"])
+	else:
+		correct_list = ["None"]
+
+#trimmed data is the minimum so this list is always completed
+trim_list = list(config["illumina_trimming"])
+#if trimmed is selected, None needs to be added to corrected and merged so we get a trimmed-None-None return
+if "trimmed" in config["assemble"]["assemble_at_stage"]:
+	if not "None" in merge_list:
+		merge_list.append("None")
+	if not "None" in correct_list:
+		correct_list.append("None")
+
+print("FINAL - Illumina_trim for assembly: "+str(trim_list))
+print("FINAL - Illumina_correct for assembly: "+str(correct_list))
+print("FINAL - Illumina_merging for assembly: "+str(merge_list))
+
 rule kmergenie:
 	input:
 		reads = get_illumina_assembly_input,
-##		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-##		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-##		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-##		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz" 
 	output:
-		report = directory("results/{sample}/assembly/{assinput}/kmergenie/report"),
-		bestk = "results/{sample}/assembly/{assinput}/kmergenie/{sample}.bestk",
-		bestkcutoff = "results/{sample}/assembly/{assinput}/kmergenie/{sample}.bestk-cutoff",
+		report = directory("results/{sample}/assembly/kmergenie/{trimmer}-{corrector}-{merger}/report"),
+		bestk = "results/{sample}/assembly/kmergenie/{trimmer}-{corrector}-{merger}/{sample}.bestk",
+		bestkcutoff = "results/{sample}/assembly/kmergenie/{trimmer}-{corrector}-{merger}/{sample}.bestk-cutoff",
 	log:
-		stdout = "results/{sample}/logs/kmergenie.{assinput}.stdout.txt",
-		stderr = "results/{sample}/logs/kmergenie.{assinput}.stderr.txt"
+		stdout = "results/{sample}/logs/kmergenie.{trimmer}-{corrector}-{merger}.stdout.txt",
+		stderr = "results/{sample}/logs/kmergenie.{trimmer}-{corrector}-{merger}.stderr.txt"
 	params:
 		sample = "{sample}",
 		mink = 21,
@@ -50,29 +78,27 @@ rule kmergenie:
 			mv *.html *.pdf {output.report}
 		fi
 		"""
+
 rule abyss:
 	input:
 		reads = get_illumina_assembly_input,
-#		f = rules.clean_trimmed_libs.output.f_trimmed,
-#		r = rules.clean_trimmed_libs.output.r_trimmed,
-#		se = rules.clean_trimmed_libs.output.orphans,
 		bestk = rules.kmergenie.output.bestk,
 		bestkcutoff = rules.kmergenie.output.bestkcutoff
 	output:
-		ok = "results/{sample}/assembly/{assinput}/abyss/bestk/abyss.ok",
-		unitigs = "results/{sample}/assembly/{assinput}/abyss/bestk/{sample}-unitigs.fa",
-		scaffolds = "results/{sample}/assembly/{assinput}/abyss/bestk/{sample}-scaffolds.fa",
+		ok = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/abyss.ok",
+		unitigs = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/{sample}-unitigs.fa",
+		scaffolds = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/{sample}-scaffolds.fa",
 	log:
-		stdout = "results/{sample}/logs/abyss.{assinput}.bestk.stdout.txt",
-		stderr = "results/{sample}/logs/abyss.{assinput}.bestk.stderr.txt"
+		stdout = "results/{sample}/logs/abyss.{trimmer}-{corrector}-{merger}.bestk.stdout.txt",
+		stderr = "results/{sample}/logs/abyss.{trimmer}-{corrector}-{merger}.bestk.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/abyss/bestk",
+		dir = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk",
 		defaultk = k
 	singularity: "docker://reslp/abyss:2.2.5"
 #	shadow: "minimal"
-	threads: 90
+	threads: config["threads"]["abyss"]
 	resources:
 		mem_gb=370
 	shell:
@@ -98,28 +124,24 @@ rule abyss:
 rule minia:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz",
 		bestk = rules.kmergenie.output.bestk,
 		bestkcutoff = rules.kmergenie.output.bestkcutoff
 	output:
-		ok = "results/{sample}/assembly/{assinput}/minia/bestk/minia.ok",
-		unitigs = "results/{sample}/assembly/{assinput}/minia/bestk/{sample}_bestk.unitigs.fa",
-		contigs = "results/{sample}/assembly/{assinput}/minia/bestk/{sample}_bestk.contigs.fa",
+		ok = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/minia.ok",
+		unitigs = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/{sample}_bestk.unitigs.fa",
+		contigs = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/{sample}_bestk.contigs.fa",
 	log:
-		stdout = "results/{sample}/logs/minia.{assinput}.bestk.stdout.txt",
-		stderr = "results/{sample}/logs/minia.{assinput}.bestk.stderr.txt"
+		stdout = "results/{sample}/logs/minia.{trimmer}-{corrector}-{merger}.bestk.stdout.txt",
+		stderr = "results/{sample}/logs/minia.{trimmer}-{corrector}-{merger}.bestk.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/minia/bestk",
+		dir = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk",
 		defaultk = k
 	singularity:
 		"docker://chrishah/minia:3.2.4"
 #	shadow: "minimal"
-	threads: 40
+	threads: config["threads"]["minia"]
 	resources:
 		mem_gb=20
 	shell:
@@ -152,24 +174,20 @@ rule minia:
 rule platanus:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz" 
 	output:
-		ok = "results/{sample}/assembly/{assinput}/platanus/auto/platanus.ok"
+		ok = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok"
 	log:
-		stdout = "results/{sample}/logs/platanus.{assinput}.stdout.txt",
-		stderr = "results/{sample}/logs/platanus.{assinput}.stderr.txt"
+		stdout = "results/{sample}/logs/platanus.{trimmer}-{corrector}-{merger}.stdout.txt",
+		stderr = "results/{sample}/logs/platanus.{trimmer}-{corrector}-{merger}.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/platanus/auto",
+		dir = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto",
 		min = 100
 	singularity:
 		"docker://chrishah/platanus:v1.2.4"
 #	shadow: "minimal"
-	threads: 90
+	threads: config["threads"]["platanus"]
 	resources:
 		mem_gb=365
 	shell:
@@ -208,13 +226,6 @@ rule platanus:
 		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
 		touch platanus.ok
-#		if [ ! -d {params.dir} ]
-#		then
-#			mkdir -p {params.dir} && mv {params.sample}.* {params.dir}/
-#		else
-#			rm -f {params.dir}/* && mv {params.sample}.* {params.dir}/
-#		fi
-#		touch {params.dir}/platanus.status.ok
 		"""
 		#filtering paired end reads by length (minimum 100)
 #		paste <(zcat {params.wd}/{input.f}) <(zcat {params.wd}/{input.r}) | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; chomp $p; chomp $q; @s=split("\\t",$s); if ((length($s[0]) >= {params.min}) && (length($s[1]) >= {params.min})){{@h=split("\\t",$h); $h[0] =~ s/^@/>/g; $h[1] =~ s/^@/>/g; @q=split("\\t",$q); print STDOUT "$h[0]\\n$s[0]\\n"; print STDERR "$h[1]\\n$s[1]\\n";}}' 1> temp.f1.fasta 2> temp.f2.fasta
@@ -223,28 +234,24 @@ rule platanus:
 rule spades:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz",
 		bestk = rules.kmergenie.output.bestk 
 	output:
-		ok = "results/{sample}/assembly/{assinput}/spades/{kmode}/spades.ok"
+		ok = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok"
 	log:
-		stdout = "results/{sample}/logs/spades.{assinput}.{kmode}.stdout.txt",
-		stderr = "results/{sample}/logs/spades.{assinput}.{kmode}.stderr.txt"
-	benchmark: "results/{sample}/benchmarks/spades.{assinput}.{kmode}.txt"
+		stdout = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.stdout.txt",
+		stderr = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/spades.{trimmer}-{corrector}-{merger}.{kmode}.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/spades/{kmode}",
+		dir = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}",
 		defaultks = "21,33,55,77",
 		kmode = "{kmode}",
 		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
 	singularity:
 		"docker://chrishah/spades:v3.14.0"
 #	shadow: "minimal"
-	threads: 90
+	threads: config["threads"]["spades"]
 	resources:
 		mem_gb=750
 	shell:
@@ -281,4 +288,17 @@ rule spades:
 
 		touch spades.ok
 		"""
-#		--merged {params.wd}/{input.merged} \
+
+rule gather_illumina_assemblies:
+	input:
+		expand("results/{{sample}}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok", sample=df["sample"],
+                        trimmer=trim_list,
+                        corrector=correct_list,
+                        merger=merge_list,
+			kmode=["bestk","default"])
+	output:
+		"results/{sample}/assembly/spades/spades.ok"
+	shell:
+		"""
+		touch {output}
+		"""

@@ -112,9 +112,9 @@ def input_for_clean_trim_fp(wildcards):
 #	print(Illumina_process_df.set_index("sample").loc[(wildcards.sample), ["lib"]].dropna())
 	for l in Illumina_process_df.set_index("sample").loc[(wildcards.sample), ["lib"]].values:
 		if type(l) is str:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.1.fastq.gz".format(sample=wildcards["sample"], lib=l))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz".format(sample=wildcards["sample"], lib=l))
 		else:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.1.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
 #	print(lis)
 	return lis
 def input_for_clean_trim_rp(wildcards):
@@ -123,9 +123,9 @@ def input_for_clean_trim_rp(wildcards):
 #	print(Illumina_process_df.set_index("sample").index)
 	for l in Illumina_process_df.set_index("sample").loc[(wildcards.sample), ["lib"]].values:
 		if type(l) is str:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.2.fastq.gz".format(sample=wildcards["sample"], lib=l))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz".format(sample=wildcards["sample"], lib=l))
 		else:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.2.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
 #	print(lis)
 	return lis
 def input_for_clean_trim_fo(wildcards):
@@ -134,9 +134,9 @@ def input_for_clean_trim_fo(wildcards):
 #	print(Illumina_process_df.set_index("sample").index)
 	for l in Illumina_process_df.set_index("sample").loc[(wildcards.sample), ["lib"]].values:
 		if type(l) is str:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz".format(sample=wildcards["sample"], lib=l))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz".format(sample=wildcards["sample"], lib=l))
 		else:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
 #	print(lis)
 	return lis
 def input_for_clean_trim_ro(wildcards):
@@ -145,9 +145,9 @@ def input_for_clean_trim_ro(wildcards):
 #	print(Illumina_process_df.set_index("sample").index)
 	for l in Illumina_process_df.set_index("sample").loc[(wildcards.sample), ["lib"]].values:
 		if type(l) is str:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz".format(sample=wildcards["sample"], lib=l))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz".format(sample=wildcards["sample"], lib=l))
 		else:
-			lis.append("results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
+			lis.append("results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz".format(sample=wildcards["sample"], lib=l[0]))
 #	print(lis)
 	return lis
 
@@ -228,19 +228,47 @@ def control_illumina_ec(wildcards):
 	lis = []
 	for ass in config["illumina_correction"]:
 		if ass == "spades":
-			lis.append("results/{sample}/errorcorrection/spades/spades-correct.ok".format(sample=wildcards.sample))
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-correct.ok".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 		if ass == "bless":
-			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-se.done".format(sample=wildcards.sample))
-			lis.append("results/{sample}/errorcorrection/bless/bless-kbest-pe.done".format(sample=wildcards.sample))
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-se.done".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-pe.done".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 	print(lis)
+	return lis
+
+def to_merge(wildcards):
+	lis = []
+	if wildcards.corrector == "None":
+		if wildcards.trimmer == "trimgalore":
+			lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.trimgalore.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.trimgalore.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+	else:
+		if wildcards.corrector == "bless":
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+		elif wildcards.corrector == "spades":
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 	return lis
 
 def get_illumina_assembly_input(wildcards):
 	lis = []
-#	print(wildcards.assinput)
-	lis.append("results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.1.fastq.gz".format(sample=wildcards["sample"]))
-	lis.append("results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.2.fastq.gz".format(sample=wildcards["sample"]))
-	lis.append("results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.se.fastq.gz".format(sample=wildcards["sample"]))
+	if wildcards.trimmer != "None" and wildcards.corrector == "None" and wildcards.merger == "None":
+		lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz".format(sample=wildcards["sample"], trimmer=wildcards.trimmer))
+		lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz".format(sample=wildcards["sample"], trimmer=wildcards.trimmer))
+		lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz".format(sample=wildcards["sample"], trimmer=wildcards.trimmer))
+	elif wildcards.trimmer != "None" and wildcards.corrector != "None" and wildcards.merger == "None":
+		if wildcards.corrector == "bless":
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.se.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+		elif wildcards.corrector == "spades":
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.se.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
+	elif wildcards.trimmer != "None" and wildcards.merger != "None":
+			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.notmerged.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
+			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.notmerged.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
+			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.merged.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
 	return lis
 
 longcordic = {'methods':[]}
@@ -253,7 +281,7 @@ longcor = pd.DataFrame(longcordic).set_index(['methods'], drop=False)
 def find_assemblies(wildcards):
 #function finds all assemblies for the assembler specified in the config file
 	lis = []
-	for ass in config["assembler"]:
+	for ass in config["assemble"]["assembler"]:
 		if ass == "spades":
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/*/spades/*/"+wildcards.sample+"/scaffolds.fasta"))
 		if ass == "abyss":
@@ -268,7 +296,7 @@ def find_samples_with_assemblies(all_samples):
 	lis = []
 	for s in all_samples:
 		nfiles = 0
-		for ass in config["assembler"]:
+		for ass in config["assemble"]["assembler"]:
 			file = ass+".ok"
 			for root, dirs, files in os.walk("results/"+s+"/assembly/"):
 				if file in files:
@@ -276,37 +304,64 @@ def find_samples_with_assemblies(all_samples):
 					break
 		if nfiles > 0:
 			lis.append(s)
-	print("Assemblies found for the following samples: "+str(lis))
+#	print("Assemblies found for the following samples: "+str(lis))
 	return lis
 			
 			
+
+#def gather_assemblies(wildcards):
+#	lis = []
+#	print("wildcards for quast input function: "+str(wildcards))
+#	for input in config["illumina_assembly_input"]:
+#		if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
+#			if "abyss" in config["assemble"]["assembler"]:
+#				lis.append("results/{sample}/assembly/{assinput}/abyss/bestk/abyss.ok".format(sample=wildcards["sample"], assinput=input))
+#			if "minia" in config["assemble"]["assembler"]:
+#				lis.append("results/{sample}/assembly/{assinput}/minia/bestk/minia.ok".format(sample=wildcards["sample"], assinput=input))
+#			if "platanus" in config["assemble"]["assembler"]:
+#				lis.append("results/{sample}/assembly/{assinput}/platanus/auto/platanus.ok".format(sample=wildcards["sample"], assinput=input))
+#			if "spades" in config["assemble"]["assembler"]:
+#				for kmode in ['default', 'bestk']:
+#					lis.append("results/{sample}/assembly/{assinput}/spades/{kmode}/spades.ok".format(sample=wildcards["sample"], assinput=input, kmode=kmode))
 
 def gather_assemblies(wildcards):
 	lis = []
 	print("wildcards for quast input function: "+str(wildcards))
 	for input in config["illumina_assembly_input"]:
 		if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
-			if "abyss" in config["assembler"]:
-				lis.append("results/{sample}/assembly/{assinput}/abyss/bestk/abyss.ok".format(sample=wildcards["sample"], assinput=input))
-			if "minia" in config["assembler"]:
-				lis.append("results/{sample}/assembly/{assinput}/minia/bestk/minia.ok".format(sample=wildcards["sample"], assinput=input))
-			if "platanus" in config["assembler"]:
-				lis.append("results/{sample}/assembly/{assinput}/platanus/auto/platanus.ok".format(sample=wildcards["sample"], assinput=input))
-			if "spades" in config["assembler"]:
+			if "abyss" in config["assemble"]["assembler"]:
+				for trimmer in trim_list:
+					for corrector in correct_list:
+						for merger in merge_list:
+							lis.append("results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+			if "minia" in config["assemble"]["assembler"]:
+				for trimmer in trim_list:
+					for corrector in correct_list:
+						for merger in merge_list:
+							lis.append("results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/minia.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+			if "platanus" in config["assemble"]["assembler"]:
+				for trimmer in trim_list:
+					for corrector in correct_list:
+						for merger in merge_list:
+							lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+			if "spades" in config["assemble"]["assembler"]:
 				for kmode in ['default', 'bestk']:
-					lis.append("results/{sample}/assembly/{assinput}/spades/{kmode}/spades.ok".format(sample=wildcards["sample"], assinput=input, kmode=kmode))
+					for trimmer in trim_list:
+						for corrector in correct_list:
+							for merger in merge_list:
+								lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode))
 
 			#further assemblers that require fast5 data as input AND fastq reads for correction or alike
 			if wildcards.sample in df_fast5["sample"].tolist():
 				for basecaller in config["ont_basecalling"]["basecaller"]:
-					if "haslr" in config["assembler"]:
+					if "haslr" in config["assemble"]["assembler"]:
 						lis.append("results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-					if "abyss" in config["assembler"]:
+					if "abyss" in config["assemble"]["assembler"]:
 						lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}/abyss.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
 						if wildcards.sample in Illumina_process_df["sample"].tolist():
 							for l in config["long_correction"]:
 								lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcorrection}/abyss.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
-					if "spades" in config["assembler"]:
+					if "spades" in config["assemble"]["assembler"]:
 						lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}/spades.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
 						if wildcards.sample in Illumina_process_df["sample"].tolist():
 							for l in config["long_correction"]:
@@ -314,10 +369,10 @@ def gather_assemblies(wildcards):
 
 	#assemblers that do only with fast5 data
 	for basecaller in config["ont_basecalling"]["basecaller"]:
-		if "canu" in config["assembler"]:
+		if "canu" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/canu/raw/{basecaller}/canu.ok".format(sample=wildcards["sample"], basecaller=basecaller))
-		if "flye" in config["assembler"]:
+		if "flye" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/flye/raw/{basecaller}/flye.ok".format(sample=wildcards["sample"], basecaller=basecaller))
 				if wildcards.sample in Illumina_process_df["sample"].tolist():

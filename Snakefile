@@ -1,7 +1,7 @@
 #configfile from script
 
 #get stuff from config file
-k = config["default_k"]
+k = config["assemble"]["default_k"]
 #ec_concurrency = config["ectools"]["ec_concurrency"]
 abyss_ass_to_scaffold = config["abyss"]["assembly_to_scaffold"]
 assinput = config["illumina_assembly_input"]
@@ -16,6 +16,7 @@ include: "rules/functions.smk"
 
 include: "rules/illumina-process.smk"
 include: "rules/illumina-correct.smk"
+include: "rules/illumina-merge.smk"
 include: "rules/illumina-assemble.smk"
 include: "rules/ont-call.smk"
 include: "rules/ont-correct.smk"
@@ -33,18 +34,25 @@ rule eval_illumina:
 	input:
 		#fastqc
 		lambda wildcards: expand("results/{test.sample}/read_qc/fastqc_raw/{test.lib}/{test.sample}.{test.lib}.status.ok", test=illumina_units.itertuples()),
-		lambda wildcards: expand("results/{test.sample}/trimming/trim_galore/{test.lib}/{test.sample}.{test.lib}.fastqc.status.ok", test=illumina_units.itertuples()),
+		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.lib}/{test.sample}.{test.lib}.fastqc.status.ok", test=illumina_units.itertuples()),
 		#trim and gather
-		lambda wildcards: expand("results/{test.sample}/trimming/trim_galore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
+		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
 		lambda wildcards: expand("results/{test.sample}/plots/{test.sample}-k{k}-distribution-full.pdf", test=illumina_units.itertuples(), k=config["kmc"]["k"])
 rule illumina_trim:
 	input:
 		#trim and gather
-		lambda wildcards: expand("results/{test.sample}/trimming/trim_galore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
+		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
 
 rule correct_illumina:
 	input:
-		expand(rules.gather_illumina_corrected.output, sample=Illumina_process_df["sample"])
+		expand(rules.gather_illumina_corrected.output, sample=Illumina_process_df["sample"], trimmer=config["illumina_trimming"])
+
+rule merge_illumina:
+	input:
+		expand(rules.gather_illumina_merged.output, sample=Illumina_process_df["sample"], 
+			trimmer=trimmed_list_for_merging,
+			corrector=correct_list_for_merging,
+			merger=merge_list_for_merging)
 
 rule ont_call:
 	input:
@@ -61,8 +69,17 @@ rule long_correct:
 
 rule assemble:
 	input:
-		expand(rules.quast.output, sample=df["sample"])
+		expand(rules.quast.output, sample=df["sample"],
+			trimmer=trim_list,
+			corrector=correct_list,
+			merger=merge_list)
 		
+rule assemble_new:
+	input:
+		expand(rules.gather_illumina_assemblies.output, sample=df["sample"])
+#			trimmer=config["illumina_trimming"],
+#			corrector=config["illumina_correction"],
+#			merger=config["illumina_merge"]["merger"])
 #illumina_units = units[units["sample"].isin(df_fastq["sample"].tolist()+df_bam["sample"].tolist())]
 #rule assemble_short:
 #	input:

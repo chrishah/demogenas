@@ -72,11 +72,11 @@ rule trim_trimgalore:
 		stdout = "results/{sample}/logs/trimgalore.{lib}.stdout.txt",
 		stderr = "results/{sample}/logs/trimgalore.{lib}.stderr.txt"
 	output:
-		ok = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.status.ok",
-		f_trimmed = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.1.fastq.gz",
-		r_trimmed = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.2.fastq.gz",
-		f_orphans = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz",
-		r_orphans = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz"
+		ok = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.status.ok",
+		f_trimmed = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz",
+		r_trimmed = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz",
+		f_orphans = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz",
+		r_orphans = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz"
 	shadow: "minimal"
 	threads: 4
 	shell:
@@ -132,16 +132,16 @@ rule fastqc_trimmed:
 	singularity:
 		"docker://chrishah/trim_galore:0.6.0"
 	log:
-		stdout = "results/{sample}/logs/fastqc_trim_galore.{sample}.{lib}.stdout.txt",
-		stderr = "results/{sample}/logs/fastqc_trim_galore.{sample}.{lib}.stderr.txt"
+		stdout = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stdout.txt",
+		stderr = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stderr.txt"
 	output:
-		ok = "results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.fastqc.status.ok",
+		ok = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.fastqc.status.ok",
 	shadow: "minimal"
 	threads: 2
 	shell:
 		"""
 		fastqc -o ./ {input} 1> {log.stdout} 2> {log.stderr}
-		mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trim_galore/{params.lib}/
+		mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trimgalore/{params.lib}/
 		touch {output}
 		
 		"""
@@ -154,7 +154,7 @@ rule stats:
 		stdout = "results/{sample}/logs/readstats.{sample}.stdout.txt",
 		stderr = "results/{sample}/logs/readstats.{sample}.stderr.txt"
 	output: 
-		stats = "results/{sample}/trimming/trim_galore/{sample}.readstats.txt"
+		stats = "results/{sample}/trimming/trimgalore/{sample}.readstats.txt"
 	threads: 2
 	shadow: "shallow"
 	shell:
@@ -168,10 +168,10 @@ rule stats:
 		"""
 rule kmc:
 	input:
-		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
 	params:
 		sample = "{sample}",
 		k = "{k}",
@@ -203,7 +203,7 @@ rule kmc:
 
 rule reformat_read_headers:
 	input:
-		"results/{sample}/trimming/trim_galore/{lib}/{sample}.{lib}.{pe}.fastq.gz"
+		"results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.{pe}.fastq.gz"
 	log:
 		stdout = "results/{sample}/logs/reformat.{lib}.{pe}.stdout.txt",
 		stderr = "results/{sample}/logs/reformat.{lib}.{pe}.stderr.txt"
@@ -252,14 +252,6 @@ rule plot_k_hist:
 
 rule clean_trimmed_libs:
 	input:
-#		forward = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-#		reverse = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-#		forward_orphans = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-#		reverse_orphans = lambda wildcards: expand("results/{{sample}}/trimming/trim_galore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-#		forward = lambda wildcards: expand("results/{{test.sample}}/trimming/trim_galore/{test.lib}/{{test.sample}}.{test.lib}.1.fastq.gz", test=illumina_units.itertuples()),
-#		reverse = lambda wildcards: expand("results/{{test.sample}}/trimming/trim_galore/{test.lib}/{{test.sample}}.{test.lib}.2.fastq.gz", test=illumina_units.itertuples()),
-#		forward_orphans = lambda wildcards: expand("results/{{test.sample}}/trimming/trim_galore/{test.lib}/{{test.sample}}.{test.lib}.unpaired.1.fastq.gz", test=illumina_units.itertuples()),
-#		reverse_orphans = lambda wildcards: expand("results/{{test.sample}}/trimming/trim_galore/{test.lib}/{{test.sample}}.{test.lib}.unpaired.2.fastq.gz", test=illumina_units.itertuples()),
 		forward = input_for_clean_trim_fp,
 		reverse = input_for_clean_trim_rp,
 		forward_orphans = input_for_clean_trim_fo,
@@ -270,10 +262,10 @@ rule clean_trimmed_libs:
 	singularity:
 		"docker://chrishah/trim_galore:0.6.0"
 	output:
-		ok = "results/{sample}/trimming/trim_galore/{sample}-full/{sample}.cat.status.ok",
-		f_trimmed = "results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.1.fastq.gz",
-		r_trimmed = "results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.2.fastq.gz",
-		orphans = "results/{sample}/trimming/trim_galore/{sample}-full/{sample}.trimgalore.se.fastq.gz",
+		ok = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.cat.status.ok",
+		f_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.1.fastq.gz",
+		r_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.2.fastq.gz",
+		orphans = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.se.fastq.gz",
 	shadow: "minimal"
 	threads: 2
 	shell:
