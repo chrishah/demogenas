@@ -327,45 +327,44 @@ def find_samples_with_assemblies(all_samples):
 def gather_assemblies(wildcards):
 	lis = []
 	print("wildcards for quast input function: "+str(wildcards))
-	for input in config["illumina_assembly_input"]:
-		if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
-			if "abyss" in config["assemble"]["assembler"]:
+	if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
+		if "abyss" in config["assemble"]["assembler"]:
+			for trimmer in trim_list:
+				for corrector in correct_list:
+					for merger in merge_list:
+						lis.append("results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+		if "minia" in config["assemble"]["assembler"]:
+			for trimmer in trim_list:
+				for corrector in correct_list:
+					for merger in merge_list:
+						lis.append("results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/minia.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+		if "platanus" in config["assemble"]["assembler"]:
+			for trimmer in trim_list:
+				for corrector in correct_list:
+					for merger in merge_list:
+						lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+		if "spades" in config["assemble"]["assembler"]:
+			for kmode in ['default', 'bestk']:
 				for trimmer in trim_list:
 					for corrector in correct_list:
 						for merger in merge_list:
-							lis.append("results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
-			if "minia" in config["assemble"]["assembler"]:
-				for trimmer in trim_list:
-					for corrector in correct_list:
-						for merger in merge_list:
-							lis.append("results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/minia.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
-			if "platanus" in config["assemble"]["assembler"]:
-				for trimmer in trim_list:
-					for corrector in correct_list:
-						for merger in merge_list:
-							lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
-			if "spades" in config["assemble"]["assembler"]:
-				for kmode in ['default', 'bestk']:
-					for trimmer in trim_list:
-						for corrector in correct_list:
-							for merger in merge_list:
-								lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode))
+							lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode))
 
-			#further assemblers that require fast5 data as input AND fastq reads for correction or alike
-			if wildcards.sample in df_fast5["sample"].tolist():
-				for basecaller in config["ont_basecalling"]["basecaller"]:
-					if "haslr" in config["assemble"]["assembler"]:
-						lis.append("results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-					if "abyss" in config["assemble"]["assembler"]:
-						lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}/abyss.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-						if wildcards.sample in Illumina_process_df["sample"].tolist():
-							for l in config["long_correction"]:
-								lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcorrection}/abyss.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
-					if "spades" in config["assemble"]["assembler"]:
-						lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}/spades.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-						if wildcards.sample in Illumina_process_df["sample"].tolist():
-							for l in config["long_correction"]:
-								lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcorrection}/spades.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
+		#further assemblers that require fast5 data as input AND fastq reads for correction or alike
+		if wildcards.sample in df_fast5["sample"].tolist():
+			for basecaller in config["ont_basecalling"]["basecaller"]:
+				if "haslr" in config["assemble"]["assembler"]:
+					lis.append("results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
+				if "abyss" in config["assemble"]["assembler"]:
+					lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}/abyss.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
+					if wildcards.sample in Illumina_process_df["sample"].tolist():
+						for l in config["long_correction"]:
+							lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcorrection}/abyss.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
+				if "spades" in config["assemble"]["assembler"]:
+					lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}/spades.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
+					if wildcards.sample in Illumina_process_df["sample"].tolist():
+						for l in config["long_correction"]:
+							lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcorrection}/spades.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
 
 	#assemblers that do only with fast5 data
 	for basecaller in config["ont_basecalling"]["basecaller"]:

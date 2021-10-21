@@ -4,7 +4,6 @@
 k = config["assemble"]["default_k"]
 #ec_concurrency = config["ectools"]["ec_concurrency"]
 abyss_ass_to_scaffold = config["abyss"]["assembly_to_scaffold"]
-assinput = config["illumina_assembly_input"]
 longcor = config["long_correction"]
 
 marvel_batches_n = 20
