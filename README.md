@@ -60,7 +60,7 @@ If you don't want to go all the way and assemble, there are other modes, such as
 ./demogenas -t serial -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 ```
 
-Note that for a sample comprising only fast5 data nothing will be done.
+Note that for a sample comprising only fast5 data none of the illumina specific steps will be done. You can try.
 ```bash
 ./demogenas -t serial -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
 ./demogenas -t serial -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
