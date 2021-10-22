@@ -103,7 +103,7 @@ fi
 mycmd+=(snakemake)
 printcmd="snakemake "
 if [[ $RUNMODE == "trim_illumina" ]]; then
-	mycmd+=(illumina_trim)
+	mycmd+=(illumina_trim --until gather_short_trimmed_by_lib )
 	printcmd=$printcmd"illumina_trim "
 elif [[ $RUNMODE == "eval_illumina" ]]; then
 	mycmd+=(eval_illumina)

@@ -1,4 +1,4 @@
-samples: "data/testdata/test.data.csv"
+samples: "data/testdata/test.data.tsv"
 
 ### short read trimming
 illumina_trimming: ["trimgalore"]
@@ -14,11 +14,11 @@ illumina_merge:
 #ont basecallers
 ont_basecalling:
    basecaller: ["guppy", "flappie"]  #, "flappie", "guppy"] #"bonito"]
-   concurrency: 100
+   concurrency: 10
    minlength: 300
 
 #long read correction
-long_correction: ["ratatosk", "canu"] #"ratatosk", "consent", "canu"]
+long_correction: ["ratatosk", "canucorrect", "consent"] #"ratatosk", "consent", "canu"]
 
 bless_k: [21,31,41]
 
@@ -31,7 +31,7 @@ kmc:
 
 ### short read assembly
 assemble: 
-   assembler: ["abyss", "minia", "platanus", "spades", "haslr", "flye", "canu"] 
+   assembler: ["abyss", "minia", "platanus", "spades", "haslr", "abyss_scaffold", "spades_hybrid", "flye", "canu"] 
    assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
    default_k: [51]
 #assembler: ["haslr"] #, "spades", "platanus"]
