@@ -26,9 +26,9 @@ if "trimmed" in config["assemble"]["assemble_at_stage"]:
 	if not "None" in correct_list:
 		correct_list.append("None")
 
-#print("FINAL - Illumina_trim for assembly: "+str(trim_list))
-#print("FINAL - Illumina_correct for assembly: "+str(correct_list))
-#print("FINAL - Illumina_merging for assembly: "+str(merge_list))
+print("FINAL - Illumina_trim for assembly: "+str(trim_list))
+print("FINAL - Illumina_correct for assembly: "+str(correct_list))
+print("FINAL - Illumina_merging for assembly: "+str(merge_list))
 
 rule kmergenie:
 	input:

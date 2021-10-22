@@ -179,44 +179,46 @@ def get_fast5_dir(wildcards):
 #	print("wildcards for get called reads individual by library input function: "+str(wildcards))
 
 def get_called_by_sample_by_lib(wildcards):
-	print("\nwildcards for 'get_called_by_sample_by_id' basecalled input function: "+str(wildcards))
+#	print("\nwildcards for 'get_called_by_sample_by_lib' basecalled input function: "+str(wildcards))
 	lis = []
 	for u in fast5_units.itertuples():
-		print("sample: %s, lib: %s" %(u.sample, u.lib))
+#		print("sample: %s, lib: %s" %(u.sample, u.lib))
 		if str(u.sample) == wildcards.sample:
 			lib = u.lib
 			if str(lib) == wildcards.lib:
 				for unit in flappie_unit_list:
 					lis.append("results/{sample}/reads/ont/{basecaller}/{lib}/{sample}.{basecaller}.{unit}.fastq.gz".format(sample=wildcards.sample, lib=lib, basecaller=wildcards.basecaller, unit=unit))
-#	print(lis)
+#	print(len(lis))
 	return lis
 	
 
 ## this function gathers called reads for direct correction
 def get_called_by_sample(wildcards):
-	print("\nwildcards for 'get_called_by_sample' basecalled input function: "+str(wildcards))
+#	print("\nwildcards for 'get_called_by_sample' basecalled input function: "+str(wildcards))
 	lis = []
 	for u in fast5_units.itertuples():
 #		print("sample: %s, lib: %s" %(u.sample, u.lib))
 		if str(u.sample) == wildcards.sample:
 			lib = u.lib
-#		print("\tinput for %s and %s" %(u.sample, u.lib))
+			print("\tinput for %s and %s" %(u.sample, u.lib))
 #		for basecaller in config["basecaller"]:
 			for unit in flappie_unit_list:
 				lis.append("results/{sample}/reads/ont/{basecaller}/{lib}/{sample}.{basecaller}.{unit}.fastq.gz".format(sample=wildcards.sample, lib=lib, basecaller=wildcards.basecaller, unit=unit))
-#	print(lis)
+#	print(len(lis))
 	return lis
 
 
 ## this function gathers corrected reads from each library
 def gather_corrected_by_lib(wildcards):
-	print("\nwildcards for 'gather_corrected' input function: "+str(wildcards))
+#	print("\nwildcards for 'gather_corrected' input function: "+str(wildcards))
+#	print("longcorrection: "+str(wildcards.longcorrection))
 	lis = []
 	for u in fast5_units.itertuples():
 #		print("sample: %s, lib: %s" %(u.sample, u.lib))
 		if str(u.sample) == wildcards.sample:
 			lib = u.lib
-			lis.append("results/{sample}/errorcorrection/{corrector}/{basecaller}/{lib}/{sample}.{lib}.{basecaller}.{corrector}.fastq.gz".format(sample=wildcards.sample, lib=lib, corrector=wildcards.corrector, basecaller=wildcards.basecaller))
+			if wildcards.longcorrection in ["ratatosk"]:
+				lis.append("results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{lib}/{sample}.{lib}.{basecaller}.{longcorrection}.fastq.gz".format(sample=wildcards.sample, lib=lib, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger, longcorrection=wildcards.longcorrection, basecaller=wildcards.basecaller))
 #	print(lis)
 	return lis
 
@@ -232,7 +234,7 @@ def control_illumina_ec(wildcards):
 		if ass == "bless":
 			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-se.done".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 			lis.append("results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-pe.done".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
-	print(lis)
+#	print(lis)
 	return lis
 
 def to_merge(wildcards):
@@ -252,6 +254,7 @@ def to_merge(wildcards):
 
 def get_illumina_assembly_input(wildcards):
 	lis = []
+#	print("wildcards for 'get_illumina_assembly_input' input function: "+str(wildcards))
 	if wildcards.trimmer != "None" and wildcards.corrector == "None" and wildcards.merger == "None":
 		lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz".format(sample=wildcards["sample"], trimmer=wildcards.trimmer))
 		lis.append("results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz".format(sample=wildcards["sample"], trimmer=wildcards.trimmer))
@@ -265,7 +268,7 @@ def get_illumina_assembly_input(wildcards):
 			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
 			lis.append("results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.se.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer))
-	elif wildcards.trimmer != "None" and wildcards.merger != "None":
+	elif (wildcards.trimmer != "None" and wildcards.corrector != "None" and wildcards.merger != "None") or (wildcards.trimmer != "None" and wildcards.corrector == "None" and wildcards.merger != "None"):
 			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.notmerged.1.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
 			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.notmerged.2.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
 			lis.append("results/{sample}/read-merging/{merger}/{trimmer}-{corrector}/{sample}.merged.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, merger=wildcards.merger))
@@ -326,7 +329,7 @@ def find_samples_with_assemblies(all_samples):
 
 def gather_assemblies(wildcards):
 	lis = []
-	print("wildcards for quast input function: "+str(wildcards))
+#	print("wildcards for quast input function: "+str(wildcards))
 	if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
 		if "abyss" in config["assemble"]["assembler"]:
 			for trimmer in trim_list:
@@ -354,55 +357,76 @@ def gather_assemblies(wildcards):
 		if wildcards.sample in df_fast5["sample"].tolist():
 			for basecaller in config["ont_basecalling"]["basecaller"]:
 				if "haslr" in config["assemble"]["assembler"]:
-					lis.append("results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-				if "abyss" in config["assemble"]["assembler"]:
-					lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}/abyss.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-					if wildcards.sample in Illumina_process_df["sample"].tolist():
-						for l in config["long_correction"]:
-							lis.append("results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcorrection}/abyss.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
-				if "spades" in config["assemble"]["assembler"]:
-					lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}/spades.ok".format(sample=wildcards["sample"], assinput=input, basecaller=basecaller))
-					if wildcards.sample in Illumina_process_df["sample"].tolist():
-						for l in config["long_correction"]:
-							lis.append("results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcorrection}/spades.ok".format(sample=wildcards["sample"], basecaller=basecaller, longcorrection=l, assinput=input))
+					for trimmer in trim_list:
+						for corrector in correct_list:
+							for merger in ["None"]:
+								lis.append("results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}/haslr.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, basecaller=basecaller))
+				if "abyss_scaffold" in config["assemble"]["assembler"]:
+					for trimmer in trim_list:
+						for corrector in correct_list:
+							for merger in ["None"]:
+								if wildcards.sample in Illumina_process_df["sample"].tolist():
+									for l in config["long_correction"]:
+										lis.append("results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, basecaller=basecaller, longcorrection=l))
+				if "spades_hybrid" in config["assemble"]["assembler"]:
+					for trimmer in trim_list:
+						for corrector in correct_list:
+							for merger in ["None"]:
+								if wildcards.sample in Illumina_process_df["sample"].tolist():
+									for l in config["long_correction"]:
+										lis.append("results/{sample}/assembly/spades_hybrid/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, basecaller=basecaller, longcorrection=l))
 
 	#assemblers that do only with fast5 data
 	for basecaller in config["ont_basecalling"]["basecaller"]:
 		if "canu" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/canu/raw/{basecaller}/canu.ok".format(sample=wildcards["sample"], basecaller=basecaller))
+				if wildcards.sample in Illumina_process_df["sample"].tolist():
+					for l in config["long_correction"]:
+						if l in ["ratatosk"]:
+							for trimmer in trim_list:
+								for corrector in correct_list:
+									for merger in ["None"]:
+										lis.append("results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/canu.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, longcorrection=l, basecaller=basecaller))
+						if l in ["canucorrect", "consent"]:
+							lis.append("results/{sample}/assembly/canu/None-None-None-{basecaller}-{longcorrection}/canu.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
 		if "flye" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/flye/raw/{basecaller}/flye.ok".format(sample=wildcards["sample"], basecaller=basecaller))
 				if wildcards.sample in Illumina_process_df["sample"].tolist():
 					for l in config["long_correction"]:
-						lis.append("results/{sample}/assembly/flye/corrected/{basecaller}/{longcorrection}/flye.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
-	print(lis)
+						if l in ["ratatosk"]:
+							for trimmer in trim_list:
+								for corrector in correct_list:
+									for merger in ["None"]:
+										lis.append("results/{sample}/assembly/flye/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, longcorrection=l, basecaller=basecaller))
+						if l in ["canucorrect", "consent"]:
+							lis.append("results/{sample}/assembly/flye/None-None-None-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
+#	print(lis)
 	return lis
 
 def get_long_assembly_input(wildcards):
-	print("\nwildcards for long basecalled input function: "+str(wildcards))
+#	print("\nwildcards for long basecalled input function: "+str(wildcards))
 	lis = []
 	for u in fast5_units.itertuples():
-		print("sample: %s, lib: %s" %(u.sample, u.lib))
+#		print("sample: %s, lib: %s" %(u.sample, u.lib))
 		if str(u.sample) == wildcards.sample:
 			lib = u.lib
 #			print("\tinput for %s and %s" %(u.sample, u.lib))
 #			for basecaller in config["ont_basecalling"]["basecaller"]:
 			for unit in flappie_unit_list:
 				lis.append("results/{sample}/reads/ont/{basecaller}/{lib}/{sample}.{basecaller}.{unit}.fastq.gz".format(sample=wildcards.sample, lib=lib, basecaller=wildcards.basecaller, unit=unit))
-	print(lis)
+#	print(lis)
 	return lis
 
-#def get_long_corrected_assembly_input(wildcards):
-#	lis = []
-#	print("wildcards for corrected long input function: "+str(wildcards))
-#	for u in fast5_units.itertuples():
-##		print("sample: %s, lib: %s" %(u.sample, u.lib))
-#		if str(u.sample) == wildcards.sample:
-#			lib = u.lib
-##			print("\tinput for %s and %s" %(u.sample, u.lib))
-#			for basecaller in config["ont_basecalling"]["basecaller"]:
-#					lis.append("results/{sample}/errorcorrection/{longcorrection}/{sample}.{longcorrection}.fastq.gz".format(sample=wildcards.sample, basecaller=basecaller, longcorrection=wildcards.longcor))
+def get_long_corrected_assembly_input(wildcards):
+	lis = []
+#	print("\nwildcards for 'get_long_corrected_assembly_input' input function: "+str(wildcards))
+	if wildcards.longcorrection == "ratatosk":
+		lis.append("results/{sample}/errorcorrection/ratatosk/{trimmer}-{corrector}-None-{basecaller}/{sample}.{basecaller}.ratatosk.fastq.gz".format(sample=wildcards.sample, trimmer=wildcards.trimmer, corrector=wildcards.corrector, basecaller=wildcards.basecaller))
+	if wildcards.longcorrection == "canucorrect":
+		lis.append("results/{sample}/errorcorrection/canucorrect/None-None-None-{basecaller}/{sample}.{basecaller}.canucorrect.fastq.gz".format(sample=wildcards.sample, basecaller=wildcards.basecaller))
+	if wildcards.longcorrection == "consent":
+		lis.append("results/{sample}/errorcorrection/consent/None-None-None-{basecaller}/{sample}.{basecaller}.consent.fastq.gz".format(sample=wildcards.sample, basecaller=wildcards.basecaller))
 #	print(lis)
-#	return lis
+	return lis

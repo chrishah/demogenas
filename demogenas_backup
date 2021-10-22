@@ -1,0 +1,160 @@
+#!/bin/bash
+
+set -e
+
+usage() {
+        echo -e "\nWelcome to demogenas. Your are using Git commit: $commit"
+        echo
+        echo "Usage: $0 [-m <runmode>] [-t <submission_system>] [-c <cluster_config_file>] [-v]"
+        echo
+        echo "Mandatory:"
+	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all
+	-m trim_illumina
+	-m eval_illumina
+	-m correct_illumina
+	-m assemble
+	-m evalutate"
+#	-m assemble_short
+#	-m assemble_long
+        echo "  -t <submission_system> Specify available submission system. Options: sge, slurm, torque, serial (no submission system)."
+        echo -e "\nOptional:"
+	echo "  --dry Invokes a dry-run. Corresponds to: snakemake -n"
+	echo "  --configfile=<file>. Path to configfile (default: data/config.yaml)"
+	echo "  --clusterconfig=<cluster_config_file> Path to cluster config file in YAML format (required if submission system != serial). "
+	echo "  --threads=<int>. Number of threads (for runmode 'serial' - default: all available)"
+	echo "  --select=<string>. Specific samples to run pipeline for (from samples file)."
+        echo -e "\nExpert:"
+        echo "  -s <snakemake_args> Additional arguments passed on to the snakemake command (optional)."
+        echo "  -i \"<singularity_args>\" Additional arguments passed on to singularity (optional)."
+	echo
+	echo -e "\nExamples:"
+	echo "Start serial run for all samples in the samples file:"
+	echo "./demogenas -m assemble -t serial --threads=8 --configfile=data/testdata/test.config.yaml --dry"
+	echo "Start serial run for two samples:"
+	echo "./demogenas -m assemble -t serial --threads=8 --configfile=data/testdata/test.config.yaml --select=fastq_only,bam_only --dry"
+	echo "Submit on SLURM cluster for one sample:"
+	echo "./demogenas -m assemble -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/testdata/test.config.yaml --select=fast5_only --dry"
+
+	echo
+        1>&2; exit 1; }
+
+version() {
+        echo "$0 Git commit: $commit"
+        exit 0
+}
+CLUSTER=""
+CLUSTER_CONFIG=""
+SETUP=""
+REPORT=""
+DRY=""
+RESET="FALSE"
+RUNMODE="all"
+NJOBS="10001"
+commit=$(git rev-parse --short HEAD)
+STDSMARGS="--notemp --latency-wait 60"
+CFILE="data/config.yaml"
+
+while getopts ":m:vt:s:i:-:" option;
+        do
+                case "${option}"
+                in
+                        m) RUNMODE=${OPTARG};;
+                        t) CLUSTER=${OPTARG};;
+                        s) SM_ARGS=${OPTARG};;
+                        i) SI_ARGS=${OPTARG};;
+                        v) version;;
+			-) LONG_OPTARG="${OPTARG#*}"
+				case $OPTARG in
+					dry) DRY="-n" ;;
+                        		clusterconfig=*) CLUSTER_CONFIG=${OPTARG#*=};;
+					threads=*) THREADS=${OPTARG#*=};;
+					select=*) SELECT=${OPTARG#*=};;
+					configfile=*) CFILE=${OPTARG#*=};;
+					verbose) VERBOSE="-pr" ;;
+					'' ) break ;;
+					*) echo "Illegal option --$OPTARG" >&2; usage; exit 2 ;;
+				esac ;;	
+                        *) echo "Illegal option --$OPTARG" >&2; usage;;
+                        ?) echo "Illegal option --$OPTARG" >&2 usage;;
+                esac
+        done
+#SM_ARGS="--quiet"
+if [ $OPTIND -eq 1 ]; then usage; fi
+
+if [[ ! -z $THREADS ]]; then NJOBS=$THREADS; fi
+# make sure these directories exist before submission because they are needed as singularity bind points
+#if [[ ! -d .usr_tmp ]]; then mkdir .usr_tmp; fi 
+#if [[ ! -d .conda_pkg_tmp ]]; then mkdir .conda_pkg_tmp; fi
+if [[ $RESET == "TRUE" ]]; then
+	grep -o -P 'batch job\K.{1,8}' log/submission.txt > log/sub_ids.txt
+	if [[ $CLUSTER == "slurm" ]]; then
+		cat log/sub_ids.txt | while read line; do scancel $line; done
+	elif [[ $CLUSTER == "sge" ]]; then
+		cat log/sub_ids.txt | while read line; do qdel $line; done
+	elif [[ $CLUSTER == "torque" ]]; then
+		cat log/sub_ids.txt | while read line; do qdel $line; done
+	else
+                echo "reset not valid for serial submission"
+	fi
+	exit 0
+fi
+#echo $RESET
+mycmd+=(snakemake)
+printcmd="snakemake "
+if [[ $RUNMODE == "trim_illumina" ]]; then
+	mycmd+=(illumina_trim)
+	printcmd=$printcmd"illumina_trim "
+elif [[ $RUNMODE == "eval_illumina" ]]; then
+	mycmd+=(eval_illumina)
+	printcmd=$printcmd"eval_illumina "
+elif [[ $RUNMODE == "correct_illumina" ]]; then
+	mycmd+=(correct_illumina --until gather_illumina_corrected)
+	printcmd=$printcmd"correct_illumina --until gather_illumina_corrected"
+#elif [[ $RUNMODE == "assemble_short" ]]; then
+#	mycmd+=(assemble_short)
+#elif [[ $RUNMODE == "assemble_long" ]]; then
+#	mycmd+=(assemble_long)
+elif [[ $RUNMODE == "assemble" ]]; then
+	mycmd+=(assemble)
+	printcmd=$printcmd"assemble "
+elif [[ $RUNMODE == "evaluate" ]]; then
+	mycmd+=(quastall)
+	printcmd=$printcmd"quastall "
+else
+	echo "Runmode not recognized: "$RUNMODE
+	exit 1
+fi
+mycmd+=(--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY $VERBOSE)
+printcmd=$printcmd"--configfile $CFILE --use-singularity --jobs $NJOBS $STDSMARGS $SM_ARGS $DRY $VERBOSE "
+if [[ ! -z "$SI_ARGS" ]]; then mycmd+=(--singularity-args "$SI_ARGS"); printcmd=$printcmd"--singularity-args \"$SI_ARGS\" "; fi
+
+if [[ $CLUSTER == "slurm" ]]; then
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} slurm' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} slurm' --immediate-submit "
+  elif [[ $CLUSTER == "sge" ]]; then
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} sge' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} sge' --immediate-submit "
+  elif [[ $CLUSTER == "torque" ]]; then
+	mycmd+=(--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} torque' --immediate-submit)
+	printcmd=$printcmd"--cluster-config $CLUSTER_CONFIG --cluster '$(pwd)/bin/immediate_submit.py {dependencies} torque' --immediate-submit "
+  else
+  	if [[ $CLUSTER != "serial" ]]; then
+		echo "Submission system not recognized"
+		exit 1
+	fi
+fi
+
+#specify selection
+if [[ ! -z $SELECT ]]; then mycmd+=(--config select=\""$SELECT\""); printcmd=$printcmd"--config select=\"$SELECT\"";fi
+
+
+#report
+echo -e "[$(date)]\tSnakemake command to be executed:"
+echo -e "[$(date)]\t$printcmd"
+#for value in "${mycmd[@]}"
+#do
+#     echo $value
+#done
+
+#execute
+"${mycmd[@]}"

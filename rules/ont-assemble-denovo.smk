@@ -35,16 +35,16 @@ rule flye_raw:
 		
 rule flye_corrected:
 	input:
-		long = "results/{sample}/errorcorrection/{longcor}/{basecaller}/{sample}.{basecaller}.{longcor}.fastq.gz"
-#		long = get_long_corrected_assembly_input
+#		long = "results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}.{basecaller}.{longcorrection}.fastq.gz"
+		long = get_long_corrected_assembly_input
 	output:
-		ok = "results/{sample}/assembly/flye/corrected/{basecaller}/{longcor}/flye.ok",
-		dir = directory("results/{sample}/assembly/flye/corrected/{basecaller}/{longcor}/{sample}")
+		ok = "results/{sample}/assembly/flye/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/flye.ok",
+		dir = directory("results/{sample}/assembly/flye/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/{sample}")
 	log:
-		stdout = "results/{sample}/logs/flye.corrected.{basecaller}.{longcor}.stdout.txt",
-		stderr = "results/{sample}/logs/flye.corrected.{basecaller}.{longcor}.stderr.txt"
+		stdout = "results/{sample}/logs/flye.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.stdout.txt",
+		stderr = "results/{sample}/logs/flye.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.stderr.txt"
 	benchmark:
-		"results/{sample}/benchmarks/flye.corrected.{basecaller}.{longcor}.benchmark.txt"
+		"results/{sample}/benchmarks/flye.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.benchmark.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
@@ -69,7 +69,7 @@ rule canu:
 		long = get_long_assembly_input
 	output:
 		ok = "results/{sample}/assembly/canu/raw/{basecaller}/canu.ok",
-		dir = directory("results/{sample}/assembly/canu/raw/{basecaller}/canu/{sample}")
+		dir = directory("results/{sample}/assembly/canu/raw/{basecaller}/{sample}")
 	log:
 		stdout = "results/{sample}/logs/canu.raw.{basecaller}.stdout.txt",
 		stderr = "results/{sample}/logs/canu.raw.{basecaller}.stderr.txt"
@@ -79,7 +79,7 @@ rule canu:
 		wd = os.getcwd(),
 		sample = "{sample}",
 		genome_size = "200m",
-		dir = "results/{sample}/assembly/canu/raw/{basecaller}/canu",
+		dir = "results/{sample}/assembly/canu/raw/{basecaller}",
 		options = "" #
 	singularity: "docker://chrishah/canu:v2.1.1"
 	shadow: "minimal"
@@ -94,6 +94,39 @@ rule canu:
 		useGrid=false {params.options} \
 		-nanopore {input.long} 1> {log.stdout} 2> {log.stderr}
 		"""
+
+rule canu_corrected:
+	input:
+#		long = "results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}.{basecaller}.{longcorrection}.fastq.gz"
+		long = get_long_corrected_assembly_input
+	output:
+		ok = "results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/canu.ok",
+		dir = directory("results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/{sample}")
+	log:
+		stdout = "results/{sample}/logs/canu.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.stdout.txt",
+		stderr = "results/{sample}/logs/canu.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.stderr.txt"
+	benchmark:
+		"results/{sample}/benchmarks/canu.{trimmer}-{corrector}-{merger}-{basecaller}.{longcorrection}.benchmark.txt"
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+		genome_size = "200m",
+		dir = "results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
+		options = "" #
+	singularity: "docker://chrishah/canu:v2.1.1"
+	shadow: "minimal"
+	threads: 90
+	resources:
+		mem_gb=750
+	shell:
+		"""
+		canu -assemble \
+		-d {params.dir}/{wildcards.sample} \
+		-p {sample} genomeSize={params.genome_size} \
+		useGrid=false {params.options} \
+		-nanopore-corrected {input.long} 1> {log.stdout} 2> {log.stderr}
+		"""
+
 
 #	useGrid=
 

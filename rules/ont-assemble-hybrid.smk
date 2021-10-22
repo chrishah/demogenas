@@ -182,26 +182,21 @@
 #		touch {params.wd}/{output.ok}
 #		"""
 #
-rule abyss_rescaffold:
+rule abyss_scaffold:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
 		bestk = rules.kmergenie.output.bestk,
 		abyss = rules.abyss.output.ok,
 		long = get_long_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
 	output:
-		ok = "results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}/abyss.ok",
+		ok = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok",
 	log:
-		stdout = "results/{sample}/logs/abyss.{assinput}.rescaffold-raw-{basecaller}.stdout.txt",
-		stderr = "results/{sample}/logs/abyss.{assinput}.rescaffold-raw-{basecaller}.stderr.txt"
+		stdout = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stdout.txt",
+		stderr = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/abyss/rescaffold-raw/{basecaller}",
+		dir = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
 		origdir = rules.abyss.output.ok.replace("/abyss.ok",""),
 		defaultk = k
 	singularity: "docker://reslp/abyss:2.2.5"
@@ -239,77 +234,73 @@ rule abyss_rescaffold:
 		rm {wildcards.sample}.{wildcards.basecaller}.fastq.gz
 		touch {params.wd}/{output.ok}
 		"""
-rule abyss_rescaffold_corrected:
-	input:
-		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
-		bestk = rules.kmergenie.output.bestk,
-		abyss = rules.abyss.output.ok,
-		long = "results/{sample}/errorcorrection/{longcor}/{basecaller}/{sample}.{basecaller}.{longcor}.fastq.gz",
-#		long = get_long_corrected_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
-	output:
-		ok = "results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcor}/abyss.ok",
-	log:
-		stdout = "results/{sample}/logs/abyss.{assinput}.rescaffold-corrected-{basecaller}-{longcor}.stdout.txt",
-		stderr = "results/{sample}/logs/abyss.{assinput}.rescaffold-corrected-{basecaller}-{longcor}.stderr.txt"
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcor}",
-		origdir = rules.abyss.output.ok.replace("/abyss.ok",""),
-		defaultk = k
-	singularity: "docker://reslp/abyss:2.2.5"
-#	shadow: "minimal"
-	threads: 90
-	resources:
-		#can problably use much less memory
-		mem_gb=700
-	shell:
-		"""
-		export TMPDIR={params.wd}/{params.dir}/tmp
-		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
 
-		bestk=$(cat {input.bestk})
-
-		cd {params.dir}
-		#cp all relevant files from Illumina only assembly
-		for f in $(ls -1 {params.wd}/{params.origdir}/{params.sample}-* | grep -v "\-9\." | grep -v "\-1[0-9]\." | grep -v "\-stats"); do ln -fs $f .; done 
-		if [ $bestk -eq 0 ]
-		then
-			echo -e "Setting k to {params.defaultk}" 1> {params.wd}/{log.stdout}
-			touch k.set.manually.to.{params.defaultk}
-			bestk={params.defaultk}
-		fi
-
-		inlong=$(for f in $(echo "{input.long}"); do echo {params.wd}/$f; done | tr '\\n' ' ')
-		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' long='longall' longall="<(cat $inlong)" 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
-		
-		touch {params.wd}/{output.ok}
-		"""
+#rule abyss_rescaffold_corrected:
+#	input:
+#		reads = get_illumina_assembly_input,
+##		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
+##		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
+##		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
+##		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
+#		bestk = rules.kmergenie.output.bestk,
+#		abyss = rules.abyss.output.ok,
+#		long = "results/{sample}/errorcorrection/{longcor}/{basecaller}/{sample}.{basecaller}.{longcor}.fastq.gz",
+##		long = get_long_corrected_assembly_input
+##		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
+#	output:
+#		ok = "results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcor}/abyss.ok",
+#	log:
+#		stdout = "results/{sample}/logs/abyss.{assinput}.rescaffold-corrected-{basecaller}-{longcor}.stdout.txt",
+#		stderr = "results/{sample}/logs/abyss.{assinput}.rescaffold-corrected-{basecaller}-{longcor}.stderr.txt"
+#	params:
+#		wd = os.getcwd(),
+#		sample = "{sample}",
+#		dir = "results/{sample}/assembly/{assinput}/abyss/rescaffold-corrected/{basecaller}/{longcor}",
+#		origdir = rules.abyss.output.ok.replace("/abyss.ok",""),
+#		defaultk = k
+#	singularity: "docker://reslp/abyss:2.2.5"
+##	shadow: "minimal"
+#	threads: 90
+#	resources:
+#		#can problably use much less memory
+#		mem_gb=700
+#	shell:
+#		"""
+#		export TMPDIR={params.wd}/{params.dir}/tmp
+#		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
+#
+#		bestk=$(cat {input.bestk})
+#
+#		cd {params.dir}
+#		#cp all relevant files from Illumina only assembly
+#		for f in $(ls -1 {params.wd}/{params.origdir}/{params.sample}-* | grep -v "\-9\." | grep -v "\-1[0-9]\." | grep -v "\-stats"); do ln -fs $f .; done 
+#		if [ $bestk -eq 0 ]
+#		then
+#			echo -e "Setting k to {params.defaultk}" 1> {params.wd}/{log.stdout}
+#			touch k.set.manually.to.{params.defaultk}
+#			bestk={params.defaultk}
+#		fi
+#
+#		inlong=$(for f in $(echo "{input.long}"); do echo {params.wd}/$f; done | tr '\\n' ' ')
+#		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' long='longall' longall="<(cat $inlong)" 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+#		
+#		touch {params.wd}/{output.ok}
+#		"""
 
 rule spades_hybrid:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
 		bestk = rules.kmergenie.output.bestk,
 		long = get_long_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
 	output:
-		ok = "results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}/spades.ok",
+		ok = "results/{sample}/assembly/spades_hybrid/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/spades.ok",
 	log:
-		stdout = "results/{sample}/logs/spades.{assinput}.default-hybrid-{basecaller}.stdout.txt",
-		stderr = "results/{sample}/logs/spades.{assinput}.default-hybrid-{basecaller}.stderr.txt"
+		stdout = "results/{sample}/logs/spades_hybrid.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stdout.txt",
+		stderr = "results/{sample}/logs/spades_hybrid.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/spades-hybrid/raw/{basecaller}",
+		dir = "results/{sample}/assembly/spades_hybrid/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
 		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
 	singularity:
 		"docker://chrishah/spades:v3.14.0"
@@ -352,58 +343,58 @@ rule spades_hybrid:
 #		--merged {params.wd}/{input.merged} \
 #		$(for f in $(echo "{input.long}"); do echo "--nanopore {params.wd}/$f"; done | tr '\\n' ' ') \
 
-rule spades_hybrid_corrected:
-	input:
-		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
-		bestk = rules.kmergenie.output.bestk,
-		long = "results/{sample}/errorcorrection/{longcor}/{basecaller}/{sample}.{basecaller}.{longcor}.fastq.gz",
-#		long = get_long_corrected_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
-	output:
-		ok = "results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcor}/spades.ok",
-	log:
-		stdout = "results/{sample}/logs/spades.{assinput}.hybrid-corrected-{basecaller}-{longcor}.stdout.txt",
-		stderr = "results/{sample}/logs/spades.{assinput}.hybrid-corrected-{basecaller}-{longcor}.stderr.txt"
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcor}",
-		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
-	singularity:
-		"docker://chrishah/spades:v3.14.0"
-#	shadow: "minimal"
-	threads: 90
-	resources:
-		mem_gb=750
-	shell:
-		"""
-		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
-		if [ ! -d {params.dir} ]
-		then
-			mkdir -p {params.dir}
-		else
-			rm -rf {params.dir}/* 
-		fi
-
-		cd {params.dir}
-
-		spades.py \
-		-o ./{params.sample} \
-		-s {params.wd}/{input.reads[2]} \
-		-1 {params.wd}/{input.reads[0]} \
-		-2 {params.wd}/{input.reads[1]} \
-		$(for f in $(echo "{input.long}"); do echo "--nanopore {params.wd}/$f"; done | tr '\\n' ' ') \
-		--checkpoints last \
-		--{params.mode} \
-		-t $(( {threads} - 1 )) \
-		-m $(( {resources.mem_gb} - 5 )) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-
-		touch spades.ok
-		"""
+#rule spades_hybrid_corrected:
+#	input:
+#		reads = get_illumina_assembly_input,
+##		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
+##		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
+##		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
+##		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
+#		bestk = rules.kmergenie.output.bestk,
+#		long = "results/{sample}/errorcorrection/{longcor}/{basecaller}/{sample}.{basecaller}.{longcor}.fastq.gz",
+##		long = get_long_corrected_assembly_input
+##		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
+#	output:
+#		ok = "results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcor}/spades.ok",
+#	log:
+#		stdout = "results/{sample}/logs/spades.{assinput}.hybrid-corrected-{basecaller}-{longcor}.stdout.txt",
+#		stderr = "results/{sample}/logs/spades.{assinput}.hybrid-corrected-{basecaller}-{longcor}.stderr.txt"
+#	params:
+#		wd = os.getcwd(),
+#		sample = "{sample}",
+#		dir = "results/{sample}/assembly/{assinput}/spades-hybrid/corrected/{basecaller}/{longcor}",
+#		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
+#	singularity:
+#		"docker://chrishah/spades:v3.14.0"
+##	shadow: "minimal"
+#	threads: 90
+#	resources:
+#		mem_gb=750
+#	shell:
+#		"""
+#		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
+#		if [ ! -d {params.dir} ]
+#		then
+#			mkdir -p {params.dir}
+#		else
+#			rm -rf {params.dir}/* 
+#		fi
+#
+#		cd {params.dir}
+#
+#		spades.py \
+#		-o ./{params.sample} \
+#		-s {params.wd}/{input.reads[2]} \
+#		-1 {params.wd}/{input.reads[0]} \
+#		-2 {params.wd}/{input.reads[1]} \
+#		$(for f in $(echo "{input.long}"); do echo "--nanopore {params.wd}/$f"; done | tr '\\n' ' ') \
+#		--checkpoints last \
+#		--{params.mode} \
+#		-t $(( {threads} - 1 )) \
+#		-m $(( {resources.mem_gb} - 5 )) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+#
+#		touch spades.ok
+#		"""
 
 #rule spades_consent:
 #	input:
@@ -458,23 +449,18 @@ rule spades_hybrid_corrected:
 rule haslr:
 	input:
 		reads = get_illumina_assembly_input,
-#		merged = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchmerged.fastq.gz",
-#		f = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.1.fastq.gz",
-#		r = "results/{sample}/readmerging/usearch/{sample}-full/{sample}.usearchnotmerged.2.fastq.gz",
-#		se = "results/{sample}/errorcorrection/bless/{sample}-full/{sample}.blesscorrected.se.fastq.gz", 
 		bestk = rules.kmergenie.output.bestk,
 		long = get_long_assembly_input
-#		long = expand("results/{{sample}}/reads/ont/flappie/{lib}/{{sample}}.flappie.{unit}.fastq.gz", sample="{sample}", lib="{lib}", unit=flappie_unit_list)
 	output:
-		ok = "results/{sample}/assembly/{assinput}/haslr/{basecaller}/haslr.ok",
-		dir = directory("results/{sample}/assembly/{assinput}/haslr/{basecaller}/{sample}")
+		ok = "results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}/haslr.ok",
+		dir = directory("results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}")
 	log:
-		stdout = "results/{sample}/logs/haslr.{assinput}.{basecaller}-hybrid.stdout.txt",
-		stderr = "results/{sample}/logs/haslr.{assinput}.{basecaller}-hybrid.stderr.txt"
+		stdout = "results/{sample}/logs/haslr.{trimmer}-{corrector}-{merger}-{basecaller}.stdout.txt",
+		stderr = "results/{sample}/logs/haslr.{trimmer}-{corrector}-{merger}-{basecaller}.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/{assinput}/haslr/{basecaller}",
+		dir = "results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}",
 		genome_size = "350m",
 		defaultk = k,
 		minia_mode = "unitigs", #could also be contigs

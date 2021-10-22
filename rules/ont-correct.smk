@@ -3,15 +3,15 @@ rule ratatosk:
 		reads = get_illumina_assembly_input,
 		long = get_called_by_sample_by_lib
 	output:
-		fastq = "results/{sample}/errorcorrection/ratatosk/{basecaller}/{lib}/{sample}.{lib}.{basecaller}.ratatosk.fastq.gz"
+		fastq = "results/{sample}/errorcorrection/ratatosk/{trimmer}-{corrector}-{merger}-{basecaller}/{lib}/{sample}.{lib}.{basecaller}.ratatosk.fastq.gz"
 	log:
-		stdout = "results/{sample}/logs/ratatosk.{sample}.{lib}.{basecaller}.stdout.txt",
-		stderr = "results/{sample}/logs/ratatosk.{sample}.{lib}.{basecaller}.stderr.txt"
-	benchmark: "results/{sample}/benchmarks/ratatosk.{sample}.{lib}.{basecaller}.txt"
+		stdout = "results/{sample}/logs/ratatosk.{sample}.{lib}.{trimmer}-{corrector}-{merger}-{basecaller}.stdout.txt",
+		stderr = "results/{sample}/logs/ratatosk.{sample}.{lib}.{trimmer}-{corrector}-{merger}-{basecaller}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/ratatosk.{sample}.{lib}.{trimmer}-{corrector}-{merger}-{basecaller}.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/errorcorrection/ratatosk/{basecaller}/{lib}",
+		dir = "results/{sample}/errorcorrection/ratatosk/{trimmer}-{corrector}-{merger}-{basecaller}/{lib}",
 		isize = 500,
 		k1 = 31,
 		k2 = 63,
@@ -37,24 +37,21 @@ rule ratatosk:
 		gzip {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq
 		"""
 
-#ruleorder: consent > gather_corrected_by_lib
-
 rule gather_corrected_by_lib:
 	input:
 		long = gather_corrected_by_lib,
 	output:
-		fastq = "results/{sample}/errorcorrection/{corrector}/{basecaller}/{sample}.{basecaller}.{corrector}.fastq.gz"
-#	wildcard_constraints:
-#		corrector = "ratatosk"
+		fastq = "results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}.{basecaller}.{longcorrection}.fastq.gz"
 	log:
-		stdout = "results/{sample}/logs/{corrector}-gather.{basecaller}.stdout.txt",
-		stderr = "results/{sample}/logs/{corrector}-gather.{basecaller}.stderr.txt"
-	benchmark: "results/{sample}/benchmarks/{corrector}-gather.{basecaller}.txt"
+		stdout = "results/{sample}/logs/{longcorrection}-gather.{trimmer}-{corrector}-{merger}-{basecaller}.stdout.txt",
+		stderr = "results/{sample}/logs/{longcorrection}-gather.{trimmer}-{corrector}-{merger}-{basecaller}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/{longcorrection}-gather.{trimmer}-{corrector}-{merger}-{basecaller}.txt"
 	params:
 		wd = os.getcwd(),
-	singularity: "docker://reslp/consent:v2.1"
 	shadow: "minimal"
 	threads: 2
+	wildcard_constraints:
+		longcorrection="ratatosk"
 	resources:
 		mem_gb=4
 	shell:
@@ -66,9 +63,9 @@ rule gather_corrected_by_lib:
 
 rule consent:
 	input:
-		long = get_called_by_sample
+		long = get_long_assembly_input
 	output:
-		fastq = "results/{sample}/errorcorrection/consent/{basecaller}/{sample}.{basecaller}.consent.fastq.gz"
+		fastq = "results/{sample}/errorcorrection/consent/None-None-None-{basecaller}/{sample}.{basecaller}.consent.fastq.gz"
 	log:
 		stdout = "results/{sample}/logs/consent.{basecaller}.stdout.txt",
 		stderr = "results/{sample}/logs/consent.{basecaller}.stderr.txt"
@@ -94,22 +91,22 @@ rule consent:
 		cat {params.dir}/{wildcards.sample}.{wildcards.basecaller}.consent.fasta | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $h =~ s/^>/@/; $l = length($s); $qline = print "$h\\n$s\\n+\\n"; print "I"x$l; print "\\n"' | gzip -v > {output.fastq}
 		"""
 
-rule canu_correct:
+rule correct_canu:
 	input:
-		long = get_called_by_sample
+		long = get_long_assembly_input
 	output:
-		fastq = "results/{sample}/errorcorrection/canu/{basecaller}/{sample}.{basecaller}.canu.fastq.gz"
-#		dir = directory("results/{sample}/errorcorrection/canu/{basecaller}/{sample}")
+		fastq = "results/{sample}/errorcorrection/canucorrect/None-None-None-{basecaller}/{sample}.{basecaller}.canucorrect.fastq.gz"
+#		dir = directory("results/{sample}/errorcorrection/canucorrect/None-None-None-{basecaller}/{sample}")
 	log:
-		stdout = "results/{sample}/logs/canu-correct.{basecaller}.stdout.txt",
-		stderr = "results/{sample}/logs/canu-correct.{basecaller}.stderr.txt"
+		stdout = "results/{sample}/logs/canucorrect.None-None-None-{basecaller}.stdout.txt",
+		stderr = "results/{sample}/logs/canucorrect.None-None-None-{basecaller}.stderr.txt"
 	benchmark:
-		"results/{sample}/benchmarks/canu-correct.{basecaller}.benchmark.txt"
+		"results/{sample}/benchmarks/canucorrect.None-None-None-{basecaller}.benchmark.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
 		genome_size = "200m",
-		dir = "results/{sample}/errorcorrection/canu/{basecaller}",
+		dir = "results/{sample}/errorcorrection/canucorrect/None-None-None-{basecaller}",
 		options = "" #
 	singularity: "docker://chrishah/canu:v2.1.1"
 #	shadow: "minimal"

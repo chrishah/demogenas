@@ -1,16 +1,10 @@
-wildcard_constraints:
-	trimmer="trimgalore|None",
-	corrector="bless|spades|None",
-	merger="usearch|None",
-	basecaller="guppy|flappie",
-	longcorrection="canucorrect|consent|ratatosk"
-
 #configfile from script
 
 #get stuff from config file
 k = config["assemble"]["default_k"]
 #ec_concurrency = config["ectools"]["ec_concurrency"]
 abyss_ass_to_scaffold = config["abyss"]["assembly_to_scaffold"]
+assinput = config["illumina_assembly_input"]
 longcor = config["long_correction"]
 
 marvel_batches_n = 20
@@ -22,8 +16,8 @@ include: "rules/functions.smk"
 
 include: "rules/illumina-process.smk"
 include: "rules/illumina-correct.smk"
-include: "rules/illumina-merge.smk"
 include: "rules/illumina-assemble.smk"
+include: "rules/illumina-merge.smk"
 include: "rules/ont-call.smk"
 include: "rules/ont-correct.smk"
 include: "rules/ont-assemble-hybrid.smk"
@@ -58,7 +52,7 @@ rule merge_illumina:
 		expand(rules.gather_illumina_merged.output, sample=Illumina_process_df["sample"], 
 			trimmer=trimmed_list_for_merging,
 			corrector=correct_list_for_merging,
-			merger=merge_list_for_merging)
+			merger=config["illumina_merge"]["merger"])
 
 rule ont_call:
 	input:
@@ -75,10 +69,7 @@ rule long_correct:
 
 rule assemble:
 	input:
-		expand(rules.quast.output, sample=df["sample"],
-			trimmer=trim_list,
-			corrector=correct_list,
-			merger=merge_list)
+		expand(rules.quast.output, sample=df["sample"])
 		
 #illumina_units = units[units["sample"].isin(df_fastq["sample"].tolist()+df_bam["sample"].tolist())]
 #rule assemble_short:

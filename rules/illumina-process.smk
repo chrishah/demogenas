@@ -25,10 +25,12 @@ rule sort_bam:
 		targetdir = "results/{sample}/Illumina/raw_reads/from_bam/{lib}/"
 	threads: config["threads"]["samtools"]
 	singularity: "docker://reslp/samtools:1.11"
+	resources:
+		mem_gb = 4
 	shadow: "minimal"
 	shell:
 		"""
-		samtools sort -@ $(( {threads} - 1 )) -m 2G -n {input} -o {params.sample}.{params.lib}.sorted.bam 1> {log.stdout} 2> {log.stderr}
+		samtools sort -@ $(( {threads} - 1 )) -m $(( {resources.mem_gb} / {threads} ))G -n {input} -o {params.sample}.{params.lib}.sorted.bam 1> {log.stdout} 2> {log.stderr}
 		mv *.bam {params.wd}/{params.targetdir}
 		touch {output.ok}
 		"""
@@ -250,7 +252,7 @@ rule plot_k_hist:
 		cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
 		"""
 
-rule clean_trimmed_libs:
+rule gather_short_trimmed_by_lib:
 	input:
 		forward = input_for_clean_trim_fp,
 		reverse = input_for_clean_trim_rp,

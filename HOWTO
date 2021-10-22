@@ -1,0 +1,19 @@
+
+#basic assemble:
+./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only,bam_only,fastq_bam
+
+#Sylvia
+./demogenas -m eval_illumina -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Pop18B_15,Sak02,Pop49B_46"
+
+#
+./demogenas -m correct_illumina --dry -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Pop18B_15,Sak02,Pop49B_46"
+
+./demogenas -m correct_illumina -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" --dry -s "-pr"
+
+./demogenas -m merge_illumina -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" --dry -s "-pr"
+
+./demogenas -m merge_illumina -t serial --threads=5 --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" --dry -s "-pr"
+
+./demogenas -m assemble -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" --dry -s "-pr"
+
+./demogenas -m assemble -t serial --threads=4 --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" -s "-pr --until sort_bam -n"
