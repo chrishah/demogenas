@@ -266,8 +266,8 @@ trim_trimgalore:
    J: TRI
    mem: "10G"
    time: "10:00:00"
-clean_trimmed_libs:
-   J: CTL
+gather_short_trimmed_by_lib:
+   J: GSL
    time: "00:00:10"
 kmc:
    J: KMC
