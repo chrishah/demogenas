@@ -1,4 +1,4 @@
-rule flye_raw:
+rule alo_flye_raw:
 	input:
 		long = get_long_assembly_input
 	output:
@@ -33,7 +33,7 @@ rule flye_raw:
 		touch {output.ok}
 		"""
 		
-rule flye_corrected:
+rule alo_flye_corrected:
 	input:
 #		long = "results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}.{basecaller}.{longcorrection}.fastq.gz"
 		long = get_long_corrected_assembly_input
@@ -64,7 +64,7 @@ rule flye_corrected:
 		touch {output.ok}
 		"""
 
-rule canu:
+rule alo_canu:
 	input:
 		long = get_long_assembly_input
 	output:
@@ -95,7 +95,7 @@ rule canu:
 		-nanopore {input.long} 1> {log.stdout} 2> {log.stderr}
 		"""
 
-rule canu_corrected:
+rule alo_canu_corrected:
 	input:
 #		long = "results/{sample}/errorcorrection/{longcorrection}/{trimmer}-{corrector}-{merger}-{basecaller}/{sample}.{basecaller}.{longcorrection}.fastq.gz"
 		long = get_long_corrected_assembly_input

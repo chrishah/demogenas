@@ -119,8 +119,8 @@ elif [[ $RUNMODE == "merge_illumina" ]]; then
 #elif [[ $RUNMODE == "assemble_long" ]]; then
 #	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
-	mycmd+=(assemble --until quast)
-	printcmd=$printcmd"assemble --until quast "
+	mycmd+=(assemble --until eva_quast)
+	printcmd=$printcmd"assemble --until eva_quast "
 elif [[ $RUNMODE == "evaluate" ]]; then
 	mycmd+=(quastall)
 	printcmd=$printcmd"quastall "

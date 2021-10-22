@@ -15,7 +15,7 @@ merge_list_for_merging = list(config["illumina_merge"]["merger"])
 #print("FINAL - Illumina_correction for merging: "+str(correct_list_for_merging))
 #print("FINAL - Illumina_merging for merging: "+str(merge_list_for_merging))
 
-rule setup_usearch:
+rule mer_setup_usearch:
 	output:
 		"bin/usearch"
 	shadow: "minimal"
@@ -27,10 +27,10 @@ rule setup_usearch:
 		mv $(find ./ -name "*linux32") {output}
 		"""
 
-rule usearch:
+rule mer_usearch:
 	input:
 		reads = to_merge,
-		usearch = rules.setup_usearch.output,
+		usearch = rules.mer_setup_usearch.output,
 		script = "bin/usearch_mergepairs.sh"
 	output:
 		merged = "results/{sample}/read-merging/usearch/{trimmer}-{corrector}/{sample}.merged.fastq.gz",
@@ -64,7 +64,7 @@ rule usearch:
 		cat merging.log >> {log.stdout}
 		touch {output.ok}
 		"""
-rule flash:
+rule mer_flash:
 	input:
 		to_merge
 	output:
@@ -74,7 +74,7 @@ rule flash:
 		echo {input}
 		touch {output}
 		"""
-rule merger3:
+rule mer_merger3:
 	output:
 		"results/{sample}/read-merging/merger3/{trimmer}-{corrector}/{trimmer}-{corrector}-merger3.ok"
 	shell:
@@ -83,7 +83,7 @@ rule merger3:
 		touch {output}
 		"""
 	
-rule gather_illumina_merged:
+rule mer_gather_illumina_merged:
 	input:
 #		control_illumina_me
 		expand("results/{{sample}}/read-merging/{merger}/{trimmer}-{corrector}/{trimmer}-{corrector}-{merger}.ok",  

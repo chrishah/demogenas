@@ -1,4 +1,4 @@
-rule guppy:
+rule bca_guppy:
 	input:
 		dir = get_fast5_dir
 	output:
@@ -58,7 +58,7 @@ rule guppy:
 #		fi
 		"""
 
-rule bonito_cpu:
+rule bca_bonito_cpu:
 	input:
 		dir = get_fast5_dir
 	output:
@@ -97,7 +97,7 @@ rule bonito_cpu:
 		done 1> {log.stdout} 2> {log.stderr}
 
 		"""
-rule flappie:
+rule bca_flappie:
 	input:
 		dir = get_fast5_dir
 	output:

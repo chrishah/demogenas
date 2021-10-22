@@ -51,11 +51,11 @@ rule illumina_trim:
 
 rule correct_illumina:
 	input:
-		expand(rules.gather_illumina_corrected.output, sample=Illumina_process_df["sample"], trimmer=config["illumina_trimming"])
+		expand(rules.cor_gather_illumina_corrected.output, sample=Illumina_process_df["sample"], trimmer=config["illumina_trimming"])
 
 rule merge_illumina:
 	input:
-		expand(rules.gather_illumina_merged.output, sample=Illumina_process_df["sample"], 
+		expand(rules.mer_gather_illumina_merged.output, sample=Illumina_process_df["sample"], 
 			trimmer=trimmed_list_for_merging,
 			corrector=correct_list_for_merging,
 			merger=merge_list_for_merging)
@@ -75,7 +75,7 @@ rule long_correct:
 
 rule assemble:
 	input:
-		expand(rules.quast.output, sample=df["sample"],
+		expand(rules.eva_quast.output, sample=df["sample"],
 			trimmer=trim_list,
 			corrector=correct_list,
 			merger=merge_list)
@@ -94,7 +94,7 @@ s_with_ass = find_samples_with_assemblies(all_samples)
 #print(s_with_ass)
 rule quastall:
 	input:
-		expand(rules.just_quast.output, sample=s_with_ass)
+		expand(rules.eva_just_quast.output, sample=s_with_ass)
 
 rule test_marvel:
 	input:

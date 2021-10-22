@@ -30,7 +30,7 @@ if "trimmed" in config["assemble"]["assemble_at_stage"]:
 #print("FINAL - Illumina_correct for assembly: "+str(correct_list))
 #print("FINAL - Illumina_merging for assembly: "+str(merge_list))
 
-rule kmergenie:
+rule ail_kmergenie:
 	input:
 		reads = get_illumina_assembly_input,
 	output:
@@ -79,11 +79,11 @@ rule kmergenie:
 		fi
 		"""
 
-rule abyss:
+rule ail_abyss:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk,
-		bestkcutoff = rules.kmergenie.output.bestkcutoff
+		bestk = rules.ail_kmergenie.output.bestk,
+		bestkcutoff = rules.ail_kmergenie.output.bestkcutoff
 	output:
 		ok = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/abyss.ok",
 		unitigs = "results/{sample}/assembly/abyss/{trimmer}-{corrector}-{merger}/bestk/{sample}-unitigs.fa",
@@ -121,11 +121,11 @@ rule abyss:
 		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' default 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
 		touch {params.wd}/{output.ok}
 		"""
-rule minia:
+rule ail_minia:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk,
-		bestkcutoff = rules.kmergenie.output.bestkcutoff
+		bestk = rules.ail_kmergenie.output.bestk,
+		bestkcutoff = rules.ail_kmergenie.output.bestkcutoff
 	output:
 		ok = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/minia.ok",
 		unitigs = "results/{sample}/assembly/minia/{trimmer}-{corrector}-{merger}/bestk/{sample}_bestk.unitigs.fa",
@@ -171,7 +171,7 @@ rule minia:
 		"""
 #		-in {params.wd}/{input.merged} \
 
-rule platanus:
+rule ail_platanus:
 	input:
 		reads = get_illumina_assembly_input,
 	output:
@@ -231,10 +231,10 @@ rule platanus:
 #		paste <(zcat {params.wd}/{input.f}) <(zcat {params.wd}/{input.r}) | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; chomp $p; chomp $q; @s=split("\\t",$s); if ((length($s[0]) >= {params.min}) && (length($s[1]) >= {params.min})){{@h=split("\\t",$h); $h[0] =~ s/^@/>/g; $h[1] =~ s/^@/>/g; @q=split("\\t",$q); print STDOUT "$h[0]\\n$s[0]\\n"; print STDERR "$h[1]\\n$s[1]\\n";}}' 1> temp.f1.fasta 2> temp.f2.fasta
 
 
-rule spades:
+rule ail_spades:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk 
+		bestk = rules.ail_kmergenie.output.bestk 
 	output:
 		ok = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok"
 	log:
@@ -289,7 +289,7 @@ rule spades:
 		touch spades.ok
 		"""
 
-rule gather_illumina_assemblies:
+rule ail_gather_illumina_assemblies:
 	input:
 		expand("results/{{sample}}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok", sample=df["sample"],
                         trimmer=trim_list,

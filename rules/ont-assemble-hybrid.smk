@@ -182,11 +182,11 @@
 #		touch {params.wd}/{output.ok}
 #		"""
 #
-rule abyss_scaffold:
+rule ahy_abyss_scaffold:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk,
-		abyss = rules.abyss.output.ok,
+		bestk = rules.ail_kmergenie.output.bestk,
+		abyss = rules.ail_abyss.output.ok,
 		long = get_long_assembly_input
 	output:
 		ok = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok",
@@ -197,7 +197,7 @@ rule abyss_scaffold:
 		wd = os.getcwd(),
 		sample = "{sample}",
 		dir = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
-		origdir = rules.abyss.output.ok.replace("/abyss.ok",""),
+		origdir = rules.ail_abyss.output.ok.replace("/abyss.ok",""),
 		defaultk = k
 	singularity: "docker://reslp/abyss:2.2.5"
 #	shadow: "minimal"
@@ -287,10 +287,10 @@ rule abyss_scaffold:
 #		touch {params.wd}/{output.ok}
 #		"""
 
-rule spades_hybrid:
+rule ahy_spades_hybrid:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk,
+		bestk = rules.ail_kmergenie.output.bestk,
 		long = get_long_assembly_input
 	output:
 		ok = "results/{sample}/assembly/spades_hybrid/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/spades.ok",
@@ -446,10 +446,10 @@ rule spades_hybrid:
 #		touch spades.ok
 #		"""
 
-rule haslr:
+rule ahy_haslr:
 	input:
 		reads = get_illumina_assembly_input,
-		bestk = rules.kmergenie.output.bestk,
+		bestk = rules.ail_kmergenie.output.bestk,
 		long = get_long_assembly_input
 	output:
 		ok = "results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}/haslr.ok",

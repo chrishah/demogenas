@@ -1,4 +1,4 @@
-rule ratatosk:
+rule cor_ratatosk:
 	input:
 		reads = get_illumina_assembly_input,
 		long = get_called_by_sample_by_lib
@@ -37,7 +37,7 @@ rule ratatosk:
 		gzip {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq
 		"""
 
-rule gather_corrected_by_lib:
+rule cor_gather_corrected_by_lib:
 	input:
 		long = gather_corrected_by_lib,
 	output:
@@ -61,7 +61,7 @@ rule gather_corrected_by_lib:
 		echo -e "[$(date)]\\tDone!" 1> {log.stdout} 
 		"""
 
-rule consent:
+rule cor_consent:
 	input:
 		long = get_long_assembly_input
 	output:
@@ -91,7 +91,7 @@ rule consent:
 		cat {params.dir}/{wildcards.sample}.{wildcards.basecaller}.consent.fasta | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $h =~ s/^>/@/; $l = length($s); $qline = print "$h\\n$s\\n+\\n"; print "I"x$l; print "\\n"' | gzip -v > {output.fastq}
 		"""
 
-rule correct_canu:
+rule cor_correct_canu:
 	input:
 		long = get_long_assembly_input
 	output:

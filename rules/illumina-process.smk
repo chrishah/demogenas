@@ -1,4 +1,4 @@
-rule prepare_fastq:
+rule pre_prepare_fastq:
 	input:
 		forward = get_raw_f_fastqs,
 		reverse = get_raw_r_fastqs
@@ -10,7 +10,7 @@ rule prepare_fastq:
 		ln -s {input.forward} {output.forward}
 		ln -s {input.reverse} {output.reverse}
 		"""
-rule sort_bam:
+rule pre_sort_bam:
 	input:
 		get_bam
 	output:
@@ -34,9 +34,9 @@ rule sort_bam:
 		mv *.bam {params.wd}/{params.targetdir}
 		touch {output.ok}
 		"""
-rule bam2fastq:
+rule pre_bam2fastq:
 	input:
-		rules.sort_bam.output
+		rules.pre_sort_bam.output
 	output:
 		forward = "results/{sample}/Illumina/raw_reads/from_bam/{lib}/{sample}.{lib}.raw.1.fastq.gz",
 		reverse = "results/{sample}/Illumina/raw_reads/from_bam/{lib}/{sample}.{lib}.raw.2.fastq.gz"
@@ -59,7 +59,7 @@ rule bam2fastq:
 		"""		
 
 
-rule trim_trimgalore:
+rule tri_trimgalore:
 	input:
 		forward = input_for_trimgalore_f,
 		reverse = input_for_trimgalore_r,
@@ -97,7 +97,7 @@ rule trim_trimgalore:
 
 		"""
 
-rule fastqc_raw:
+rule eva_fastqc_raw:
 	input:
 		forward = input_for_trimgalore_f,
 		reverse = input_for_trimgalore_r,
@@ -121,7 +121,7 @@ rule fastqc_raw:
 		touch {output}
 		"""
 
-rule fastqc_trimmed:
+rule eva_fastqc_trimmed:
 	input:
 		f_paired = input_for_clean_trim_fp,
 		r_paired = input_for_clean_trim_rp,
@@ -147,9 +147,9 @@ rule fastqc_trimmed:
 		touch {output}
 		
 		"""
-rule stats:
+rule eva_stats:
 	input:
-		lambda wildcards: expand(rules.fastqc_trimmed.output.ok, sample=wildcards.sample, lib=unitdict[wildcards.sample])
+		lambda wildcards: expand(rules.eva_fastqc_trimmed.output.ok, sample=wildcards.sample, lib=unitdict[wildcards.sample])
 	singularity:
 		"docker://chrishah/r-docker:latest"
 	log:
@@ -168,7 +168,7 @@ rule stats:
 		echo -e "Average read length: $(cat {output.stats} | cut -d " " -f 2)\\n" 1>> {log.stdout} 2>> {log.stderr}
 		echo -e "$(date)\tDone!" 1>> {log.stdout}
 		"""
-rule kmc:
+rule eva_kmc:
 	input:
 		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
 		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
@@ -227,10 +227,10 @@ rule reformat_read_headers:
 		touch {output.ok}
 		"""
 
-rule plot_k_hist:
+rule eva_plot_k_hist:
 	input:
-		hist = rules.kmc.output.hist,
-		stats = rules.stats.output.stats
+		hist = rules.eva_kmc.output.hist,
+		stats = rules.eva_stats.output.stats
 	output:
 		full = "results/{sample}/plots/{sample}-k{k}-distribution-full.pdf",		
 	params:
@@ -252,7 +252,7 @@ rule plot_k_hist:
 		cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
 		"""
 
-rule gather_short_trimmed_by_lib:
+rule tri_gather_short_trimmed_by_lib:
 	input:
 		forward = input_for_clean_trim_fp,
 		reverse = input_for_clean_trim_rp,

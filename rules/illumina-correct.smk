@@ -1,4 +1,4 @@
-rule bless_by_k:
+rule cor_bless_by_k:
 	input:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
@@ -34,7 +34,7 @@ rule bless_by_k:
 		"""
 
 
-rule find_best_bless:
+rule cor_find_best_bless:
 	input:
 		expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
 	output:
@@ -55,7 +55,7 @@ rule find_best_bless:
 		#read in outputs from the previous bless runs and decide on best k
 		touch {output.ok}
 		"""
-rule bless_pe:
+rule cor_bless_pe:
 	input:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
@@ -91,7 +91,7 @@ rule bless_pe:
 		ln -s {params.wd}/{params.dir}/bless-kbest-corrected/bless-k$bestk-pe.2.corrected.fastq.gz {output.reverse}
 		touch {output.ok}
 		"""
-rule bless_se:
+rule cor_bless_se:
 	input:
 		orphans = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz",
 		bless_runs = expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
@@ -126,7 +126,7 @@ rule bless_se:
 		"""
 
 
-rule correct_spades:
+rule cor_correct_spades:
 	input:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
@@ -168,7 +168,7 @@ rule correct_spades:
 		touch {output.ok}
 		"""
 
-rule gather_illumina_corrected:
+rule cor_gather_illumina_corrected:
 	input:
 		control_illumina_ec
 	output:

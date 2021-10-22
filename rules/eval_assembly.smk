@@ -1,4 +1,4 @@
-rule quast:
+rule eva_quast:
 	input:
 		gather_assemblies
 	output:
@@ -17,7 +17,7 @@ rule quast:
 		touch {output.ok}
 		"""
 
-rule just_quast:
+rule eva_just_quast:
 	input:
 		find_assemblies
 	output:
