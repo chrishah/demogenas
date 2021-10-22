@@ -1,0 +1,61 @@
+samples: "data/testdata/test.data.tsv"
+
+### short read trimming
+illumina_trimming: ["trimgalore"]
+
+### short read error correction
+illumina_correction: ["bless", "spades"]
+
+### short read merging
+illumina_merge:
+   merger: ["usearch"] #, "flash"]
+   merge_at_stage: ["trimmed", "corrected"] #could be "trimmed", "corrected" or both
+
+#ont basecallers
+ont_basecalling:
+   basecaller: ["guppy", "flappie"]  #, "flappie", "guppy"] #"bonito"]
+   concurrency: 10
+   minlength: 300
+
+#long read correction
+long_correction: ["ratatosk", "canucorrect", "consent"] #"ratatosk", "consent", "canu"]
+
+bless_k: [21,31,41]
+
+kmc:
+   max_mem_in_GB: 8
+   k: [21] #,31,41,51,61,71]
+   mincount: 2
+   maxcount: 1000000000
+   maxcounter: 255
+
+### short read assembly
+assemble: 
+   assembler: ["spades"] #["abyss", "minia", "platanus", "spades", "haslr", "abyss_scaffold", "spades_hybrid", "flye", "canu"] 
+   assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
+   default_k: [51]
+#assembler: ["haslr"] #, "spades", "platanus"]
+
+
+#ectools:
+#   ec_concurrency: 100
+#   reads_per_file: 100
+#   files_per_dir: 10
+#   unitig_similarity: [0.98, 1.0]
+#   minlength_in: 1000
+#   minlength_out: 900
+
+abyss:
+   assembly_to_scaffold: "tricormer" #may also be "tri-bestk" or others
+
+threads:
+   samtools: 4
+   trimmomatic: 24
+   kmc: 5
+   bless: 20
+   spades_correct: 90
+   mergepairs_usearch: 20
+   abyss: 90
+   minia: 10
+   platanus: 90
+   spades: 90

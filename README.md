@@ -43,11 +43,19 @@ You can check the different behaviours of the pipeline for different sample/data
 ./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=all_types
 ```
 
+Via the config file I control which steps are performed, e.g.:
+```bash
+# process illumina data and assemble with all relevant assemblers
+./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+# process illumina data and assemble only with spades
+./demogenas -t serial -m assemble --configfile=data/testdata/test.config.spadesonly.yaml --dry --select=fastq_only
+```
+
 If you don't want to go all the way and assemble, there are other modes, such as:
- - trim_illumina
- - correct_illumina
- - merge_illumina
- - eval_illumina
+ - `-m trim_illumina`
+ - `-m correct_illumina`
+ - `-m merge_illumina`
+ - `-m eval_illumina`
 
 ```bash
 # trim illumina data
