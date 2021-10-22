@@ -246,7 +246,7 @@ prepare_fastq:
    J: PFQ
 sort_bam:
    J: SOB
-   mem: "6G"
+   mem: "4G"
    time: "02:00:00"
 bam2fastq:
    J: B2F
