@@ -365,9 +365,8 @@ def gather_assemblies(wildcards):
 					for trimmer in trim_list:
 						for corrector in correct_list:
 							for merger in ["None"]:
-								if wildcards.sample in Illumina_process_df["sample"].tolist():
-									for l in config["long_correction"]:
-										lis.append("results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, basecaller=basecaller, longcorrection=l))
+								for l in config["long_correction"]:
+									lis.append("results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, basecaller=basecaller, longcorrection=l))
 				if "spades_hybrid" in config["assemble"]["assembler"]:
 					for trimmer in trim_list:
 						for corrector in correct_list:
@@ -381,27 +380,27 @@ def gather_assemblies(wildcards):
 		if "canu" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/canu/raw/{basecaller}/canu.ok".format(sample=wildcards["sample"], basecaller=basecaller))
-				if wildcards.sample in Illumina_process_df["sample"].tolist():
-					for l in config["long_correction"]:
-						if l in ["ratatosk"]:
+				for l in config["long_correction"]:
+					if l in ["consent", "canucorrect"]:
+						lis.append("results/{sample}/assembly/canu/None-None-None-{basecaller}-{longcorrection}/canu.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
+					if l in ["ratatosk"]:
+						if wildcards.sample in Illumina_process_df["sample"].tolist():
 							for trimmer in trim_list:
 								for corrector in correct_list:
 									for merger in ["None"]:
 										lis.append("results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/canu.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, longcorrection=l, basecaller=basecaller))
-						if l in ["canucorrect", "consent"]:
-							lis.append("results/{sample}/assembly/canu/None-None-None-{basecaller}-{longcorrection}/canu.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
 		if "flye" in config["assemble"]["assembler"]:
 			if wildcards.sample in df_fast5["sample"].tolist():
 				lis.append("results/{sample}/assembly/flye/raw/{basecaller}/flye.ok".format(sample=wildcards["sample"], basecaller=basecaller))
-				if wildcards.sample in Illumina_process_df["sample"].tolist():
-					for l in config["long_correction"]:
-						if l in ["ratatosk"]:
+				for l in config["long_correction"]:
+					if l in ["consent", "canucorrect"]:
+						lis.append("results/{sample}/assembly/flye/None-None-None-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
+					if l in ["ratatosk"]:
+						if wildcards.sample in Illumina_process_df["sample"].tolist():
 							for trimmer in trim_list:
 								for corrector in correct_list:
 									for merger in ["None"]:
 										lis.append("results/{sample}/assembly/flye/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, longcorrection=l, basecaller=basecaller))
-						if l in ["canucorrect", "consent"]:
-							lis.append("results/{sample}/assembly/flye/None-None-None-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], longcorrection=l, basecaller=basecaller))
 #	print(lis)
 	return lis
 
