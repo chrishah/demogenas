@@ -52,10 +52,11 @@ rule usearch:
 		mkdir tmp
 		export TMPDIR=$(pwd)/tmp
 		export PATH=$PATH:$(pwd)/bin
+		export HOME=$(pwd)
 
 		usearch_mergepairs.sh {input.reads[0]} {input.reads[1]} {params.sample} {threads} {params.batchsize} 1> {log.stdout} 2> {log.stderr}
 		cp {wildcards.sample}_1.nm.fastq.gz {output.nm1}
-		cp {wildcards.sample}_1.nm.fastq.gz {output.nm1}
+		cp {wildcards.sample}_2.nm.fastq.gz {output.nm2}
 		cp {wildcards.sample}.merged.fastq.gz {output.merged}
 		
 		echo -e "###\\n$(date)\\tLogs from individual usearch runs:\\n" >> {log.stdout}
