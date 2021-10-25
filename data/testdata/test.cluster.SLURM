@@ -12,7 +12,7 @@ __default__:
 eval_illumina:
    J: EVI
    time: "00:00:10"
-eva_quast:
+quast:
    J: QUA
    time: "01:00:00"
 assemble:
@@ -25,34 +25,49 @@ assemble_hybrid:
    J: assHYB
 ont_call:
    J: F5C
-ail_kmergenie:
+kmergenie:
    J: KMG
-   time: "24:00:00"
-   mem: 90G
-ail_abyss:
+   time: "03:00:00"
+   mem: 20G
+abyss:
    J: ABY
    N: 1
    ntasks: "threads"
    qos: mem_0384
    partition: mem_0384
    time: "42:00:00"
-ail_spades:
+abyss_tri:
+   J: ABT
+   N: 1
+   qos: mem_0768
+   partition: mem_0768
+   time: "48:00:00"
+abyss_rescaffold_long:
+   J: ABL
+   time: "24:00:00"
+spades:
    J: SPA
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "48:00:00"
-ahy_spades_hybrid:
+spades_hybrid:
    J: SPR
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "48:00:00"
-ail_minia:
+spades_hybrid_corrected:
+   J: SPC
+   N: 1
+   qos: mem_0768
+   partition: mem_0768
+   time: "48:00:00"
+minia:
    J: MIN
    time: "05:00:00"
    mem: "40G"
-ail_platanus:
+platanus:
    J: PLA
    N: 1
    qos: mem_0384
@@ -62,13 +77,13 @@ cdhitest_unitigs:
    J: CDU
    time: "10:00:00"
    mem: "8G"
-bca_flappie:
+flappie:
    J: FLA
    time: "20:00:00"
-bca_bonito_cpu:
+bonito_cpu:
    J: BOC
    time: "05:00:00"
-bca_guppy:
+guppy:
    J: GUP
    time: "15:00:00"
 split:
@@ -86,103 +101,121 @@ ectools_pass2:
 gather_ectools_corrected:
    J: ECG
    time: "05:00:00"
-cor_ratatosk:
+ratatosk:
    J: RTT
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "70:00:00"
-cor_gather_corrected_by_lib:
+gather_corrected_by_lib:
    J: GCL
    time: "01:00:00"
-alo_marvel:
+marvel:
    J: MAR
    time: "20:00:00"
-alo_marvel_pat_init:
+marvel_pat_init:
    J: MPI
    time: "02:00:00"
-alo_marvel_pat_daligner_quality_trim:
+marvel_pat_daligner_quality_trim:
    J: MPD
    time: "20:00:00"
-alo_marvel_pat_merge:
+marvel_pat_merge:
    J: MPM
    time: "02:00:00"
-alo_marvel_pat_patch:
+marvel_pat_patch:
    J: MPP
    time: "02:00:00"
-alo_marvel_ass_init:
+marvel_ass_init:
    J: MAI
    time: "02:00:00"
-alo_marvel_ass_dali_rep_trim:
+marvel_ass_dali_rep_trim:
    J: MAD
    time: "10:00:00"
-alo_marvel_ass_merge_qual_trim:
+marvel_ass_merge_qual_trim:
    J: MAM
    time: "02:00:00"
-alo_marvel_ass_rep_annot:
+marvel_ass_rep_annot:
    J: MRA
    time: "01:00:00"
-alo_marvel_ass_merge_repeats:
+marvel_ass_merge_repeats:
    J: MMR
    time: "01:00:00"
-alo_marvel_ass_hom_rep:
+marvel_ass_hom_rep:
    J: MHR
    time: "01:00:00"
-alo_marvel_ass_combine_rem_dup_over:
+marvel_ass_combine_rem_dup_over:
    J: MCR
    time: "01:00:00"
-alo_marvel_ass_gap_quality:
+marvel_ass_gap_quality:
    J: MGQ
    time: "01:00:00"
-alo_marvel_ass_merge_trim1:
+marvel_ass_merge_trim1:
    J: MMT
    time: "01:00:00"
-alo_marvel_ass_filter_rep_ali:
+marvel_ass_filter_rep_ali:
    J: MFR
    time: "01:00:00"
-alo_marvel_ass_merge_filtered:
+marvel_ass_merge_filtered:
    J: MMF
    time: "01:00:00"
-alo_marvel_ass_tour_convert:
+marvel_ass_tour_convert:
    J: MTC
    time: "05:00:00"
-alo_marvel_ass_finale:
+marvel_ass_finale:
    J: MFI
    time: "00:10:00"
-cor_consent:
+consent:
    J: CON
    time: "20:00:00"
-ahy_abyss_scaffold:
+abyss_rescaffold:
    J: ABR
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "10:00:00"
-alo_flye_raw:
+abyss_rescaffold_corrected:
+   J: ABC
+   N: 1
+   qos: mem_0768
+   partition: mem_0768
+   time: "10:00:00"
+spades_flappie:
+   J: SPF
+   N: 1
+   qos: mem_0768
+   partition: mem_0768
+   time: "48:00:00"
+spades_consent:
+   J: SPC
+   N: 1
+   qos: mem_0768
+   partition: mem_0768
+   time: "48:00:00"
+flye_raw:
    J: FLR
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "48:00:00"
-alo_flye_corrected:
+flye_corrected:
    J: FLC
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "48:00:00"
-alo_canu:
+canu:
    J: CAR
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "72:00:00"
-alo_canu_correct:
+canu_correct:
    J: CAC
    N: 1
    qos: mem_0768
    partition: mem_0768
    time: "72:00:00"
-ahy_haslr:
+haslr:
    J: HSL
    N: 1
    qos: mem_0768
@@ -209,83 +242,83 @@ illumina_trim:
    time: "00:01:00"
 long_correct:
    J: LOC
-pre_prepare_fastq:
+prepare_fastq:
    J: PFQ
-pre_sort_bam:
+sort_bam:
    J: SOB
    mem: "4G"
    time: "02:00:00"
-pre_bam2fastq:
+bam2fastq:
    J: B2F
    time: "02:00:00"
-eva_fastqc_raw:
+fastqc_raw:
    J: FQR
    time: "02:00:00"
    mem: "6G"
-eva_fastqc_trimmed:
+fastqc_trimmed:
    J: FQT
    time: "02:00:00"
    mem: "6G"
 reformat_read_headers:
    J: REF
    time: "24:00:00"
-tri_trimgalore:
+trim_trimgalore:
    J: TRI
    mem: "10G"
    time: "10:00:00"
-tri_gather_short_trimmed_by_lib:
+gather_short_trimmed_by_lib:
    J: GSL
    time: "00:00:10"
-eva_kmc:
+kmc:
    J: KMC
    time: "01:00:00"
-cor_bless_by_k:
+bless_by_k:
    J: BBK
    time: "10:00:00"
    mem: 20G
-cor_bless_pe:
+bless_pe:
    J: BPE
    time: "24:00:00"
    mem: 20G
-cor_bless_se:
+bless_se:
    J: BSE
    time: "24:00:00"
    mem: 20G
-cor_find_best_bless:
+find_best_bless:
    J: FBK
    time: "00:00:10"
-cor_correct_spades:
+correct_spades:
    J: CSP
    N: 1
    qos: mem_0384
    partition: mem_0384
    time: "05:00:00"
-cor_gather_illumina_corrected:
+gather_illumina_corrected:
    J: GIC
    time: "00:00:10"
 correct_illumina:
    J: CIL
    time: "00:00:10"
-mer_setup_usearch:
+setup_usearch:
    J: SUS
    mem: "2G"
    time: "00:10:00"
-mer_usearch:
+usearch:
    J: MUS
    mem: "20G"
    time: "05:00:00"
-mer_gather_illumina_merged:
+gather_illumina_merged:
    J: GIM
    mem: "4G"
    time: "00:00:10"
 clean_merged_libs:
    J: CML
    time: "00:30:00"
-eva_stats:
+stats:
    J: STA
    mem: "4G"
    time: "00:10:00"
-eva_plot_k_hist:
+plot_k_hist:
    J: PKH
    mem: "2G"
    time: "00:01:00"
