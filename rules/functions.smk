@@ -286,13 +286,13 @@ def find_assemblies(wildcards):
 	lis = []
 	for ass in config["assemble"]["assembler"]:
 		if ass == "spades":
-			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/*/spades/*/"+wildcards.sample+"/scaffolds.fasta"))
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/spades/*/*/"+wildcards.sample+"/scaffolds.fasta"))
 		if ass == "abyss":
-			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/*/abyss/bestk/"+wildcards.sample+"-scaffolds.fa"))
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/abyss/*/bestk/"+wildcards.sample+"-scaffolds.fa"))
 		if ass == "minia":
-			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/*/minia/*/*[0-9].contigs.fa"))
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/minia/*/bestk/*[0-9].contigs.fa"))
 		if ass == "platanus":
-			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/*/platanus/auto/*_gapClosed.fa"))
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/platanus/*/auto/*_gapClosed.fa"))
 	return lis
 
 def find_samples_with_assemblies(all_samples):
