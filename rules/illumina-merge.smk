@@ -74,14 +74,6 @@ rule mer_flash:
 		echo {input}
 		touch {output}
 		"""
-rule mer_merger3:
-	output:
-		"results/{sample}/read-merging/merger3/{trimmer}-{corrector}/{trimmer}-{corrector}-merger3.ok"
-	shell:
-		"""
-		echo {input}
-		touch {output}
-		"""
 	
 rule mer_gather_illumina_merged:
 	input:
