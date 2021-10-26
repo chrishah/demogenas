@@ -2,3 +2,5 @@
 results/
 log/*
 bin/usearch
+.cache/
+.java/
