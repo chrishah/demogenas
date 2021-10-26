@@ -36,6 +36,9 @@ assemble:
    default_k: [51]
 #assembler: ["haslr"] #, "spades", "platanus"]
 
+evaluate_assemblies:
+   evaluator: ["quast", "busco"]
+   minlength: 500
 
 #ectools:
 #   ec_concurrency: 100

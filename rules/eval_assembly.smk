@@ -1,29 +1,45 @@
-rule eva_quast:
+rule ass_gather_assemblies:
 	input:
 		gather_assemblies
 	output:
-		ok = "results/{sample}/assembly/quast/quast.ok",
-	log:
-		stdout = "results/{sample}/logs/quast.stdout.txt",
-		stderr = "results/{sample}/logs/quast.stderr.txt"
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-		dir = "results/{sample}/assembly/quast",
-	singularity: "docker://reslp/quast:5.0.2"
+		"results/{sample}/assembly/all_assemblies.done",
 	shell:
 		"""
-		echo "{input}" 1> {log.stdout} 2> {log.stderr}
-		touch {output.ok}
+		touch {output}
 		"""
 
-rule eva_just_quast:
+s_with_ass = find_samples_with_assemblies(all_samples)
+print(s_with_ass)
+
+rule eva_prepare_assemblies:
 	input:
-		find_assemblies
+		find_new_assemblies
 	output:
-		ok = "results/{sample}/assembly/quast/just_quast.ok",
+		"results/{sample}/assembly/evaluation/assemblies/prepare_min"+str(config["evaluate_assemblies"]["minlength"])+".done"
+	params:
+		minlength = config["evaluate_assemblies"]["minlength"]
+	singularity:
+		"docker://reslp/biopython_plus:1.77"
+	shell:
+		"""
+		for f in {input}
+		do
+			prefix=$(echo $f | cut -d "/" -f 4-6 | sed 's/\//-/g' | tr '\\n' ',' | sed 's/,$//')
+			bin/lengthfilter.py $f {params.minlength} > results/{wildcards.sample}/assembly/evaluation/assemblies/$prefix.min{params.minlength}.fasta
+		done
+		touch {output}
+		"""	
+
+combinations=[f.split("/")[-1].replace(".fasta","") for f in glob.glob("results/*/assembly/evaluation/assemblies/*.min"+str(config["evaluate_assemblies"]["minlength"])+".fasta")]
+
+rule eva_quast:
+	input:
+#		assemblies = find_assemblies,
+		assemblies = expand("results/{sample}/assembly/evaluation/assemblies/{combination}.fasta", sample=s_with_ass, combination=combinations),
+	output:
+		ok = "results/{sample}/assembly/quast/quast.done",
 	log:
-		log = "results/{sample}/logs/just_quast.log.txt",
+		log = "results/{sample}/logs/quast.log.txt",
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
@@ -32,11 +48,41 @@ rule eva_just_quast:
 	singularity: "docker://reslp/quast:5.0.2"
 	shell:
 		"""
-		labels=$(echo "{input}" | tr ' ' '\\n' | cut -d "/" -f 2,4-6 | sed 's/\//-/g' | tr '\\n' ',' | sed 's/,$//')
-		quast -o {params.dir} -m {params.minlen} --labels $labels -t {threads} {input} 2>&1 | tee {log.log}
+		labels=$(echo "{input.assemblies}" | tr ' ' '\\n' | cut -d "/" -f 2,6 | sed 's/\//-/g' | sed 's/\.min[0-9]*\.fasta$//' | tr '\n' ',' | sed 's/,$//')
+		quast -o {params.dir} -m {params.minlen} --labels $labels -t {threads} {input.assemblies} 2>&1 | tee {log.log}
 		touch {output.ok}
 		"""
-#		quast -o {params.dir} -m {params.minlen} -t {threads} --labels {input}
+
+
+rule eva_busco:
+	input:
+		assembly = "results/{sample}/assembly/evaluation/assemblies/{combination}.fasta",
+	output:
+		"results/{sample}/assembly/evaluation/busco/{combination}.busco.ok"
+	shell:
+		"""
+		touch {output}
+		"""
+rule eva_gather_busco:
+	input:
+		expand("results/{sample}/assembly/evaluation/busco/{combination}.busco.ok", sample=s_with_ass, combination=combinations)
+	output:
+		"results/{sample}/assembly/busco/busco.done"
+	shell:
+		"""
+		touch {output}
+		"""
+
+rule eva_x_gather_evaluations:
+	input: 
+		expand("results/{sample}/assembly/{evaluator}/{evaluator}.done", sample=s_with_ass, evaluator=config["evaluate_assemblies"]["evaluator"])
+	output:
+		"results/{sample}/assembly/evaluation.done"
+	shell:
+		"""
+		touch {output}
+		"""
+
 
 ##from $BINFL/../reslp/platyhelminthes_phylo/rules/busco.smk
 #rule download_busco_set:

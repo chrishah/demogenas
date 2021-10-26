@@ -295,6 +295,32 @@ def find_assemblies(wildcards):
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/platanus/*/auto/*_gapClosed.fa"))
 	return lis
 
+def find_new_assemblies(wildcards):
+#function finds all assemblies for the assembler specified in the config file
+	lis = []
+	for ass in config["assemble"]["assembler"]:
+		if ass == "spades":
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/spades/*/*/"+wildcards.sample+"/scaffolds.fasta"))
+		if ass == "abyss":
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/abyss/*/bestk/"+wildcards.sample+"-scaffolds.fa"))
+		if ass == "minia":
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/minia/*/bestk/*[0-9].contigs.fa"))
+		if ass == "platanus":
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/platanus/*/auto/*_gapClosed.fa"))
+	for i in reversed(range(len(lis))):
+		prefix="-".join(lis[i].split("/")[3:6])
+#		print(prefix+" - results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta")
+		if glob.glob("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
+#			print("found: 'results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta'")
+##			print(str(os.path.getctime("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta"))+" results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta")
+##			print(str(os.path.getctime(lis[i]))+" "+lis[i])
+#			print("older file: "+str(min([lis[i], "results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta"], key=os.path.getctime)))
+			#delete from list if the original assembly file is older than the new one - nothing should be done - othterwise it will be returned by the input function
+			if os.path.getctime(lis[i]) < os.path.getctime("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
+				del(lis[i])
+#	print(str(lis))
+	return lis
+
 def find_samples_with_assemblies(all_samples):
 	lis = []
 	for s in all_samples:

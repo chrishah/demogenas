@@ -14,7 +14,8 @@ usage() {
 	-m correct_illumina
 	-m merge_illumina
 	-m assemble
-	-m evalutate"
+	-m prepare_assemblies
+	-m evalutate_assemblies"
 #	-m assemble_short
 #	-m assemble_long
         echo "  -t <submission_system> Specify available submission system. Options: sge, slurm, torque, serial (no submission system)."
@@ -119,11 +120,14 @@ elif [[ $RUNMODE == "merge_illumina" ]]; then
 #elif [[ $RUNMODE == "assemble_long" ]]; then
 #	mycmd+=(assemble_long)
 elif [[ $RUNMODE == "assemble" ]]; then
-	mycmd+=(assemble --until eva_quast)
-	printcmd=$printcmd"assemble --until eva_quast "
-elif [[ $RUNMODE == "evaluate" ]]; then
-	mycmd+=(quastall)
-	printcmd=$printcmd"quastall "
+	mycmd+=(assemble --until ass_gather_assemblies)
+	printcmd=$printcmd"assemble --until ass_gather_assemblies "
+elif [[ $RUNMODE == "prepare_assemblies" ]]; then
+	mycmd+=(prepare_assemblies --until eva_prepare_assemblies)
+	printcmd=$printcmd"prepare_assemblies --until eva_prepare_assemblies "
+elif [[ $RUNMODE == "evaluate_assemblies" ]]; then
+	mycmd+=(evaluate_assemblies --until eva_x_gather_evaluations)
+	printcmd=$printcmd"evaluate_assemblies --until eva_x_gather_evaluations "
 else
 	echo "Runmode not recognized: "$RUNMODE
 	exit 1

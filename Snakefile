@@ -75,7 +75,7 @@ rule long_correct:
 
 rule assemble:
 	input:
-		expand(rules.eva_quast.output, sample=df["sample"],
+		expand(rules.ass_gather_assemblies.output, sample=df["sample"],
 			trimmer=trim_list,
 			corrector=correct_list,
 			merger=merge_list)
@@ -89,12 +89,13 @@ rule assemble:
 #	input:
 #		expand("results/{test.sample}/assembly/quast/quast.ok", test=fast5_units.itertuples(), basecaller=config["basecaller"])
 
-
-s_with_ass = find_samples_with_assemblies(all_samples)
-#print(s_with_ass)
-rule quastall:
+rule prepare_assemblies:
 	input:
-		expand(rules.eva_just_quast.output, sample=s_with_ass)
+		expand(rules.eva_prepare_assemblies.output, sample=s_with_ass)
+
+rule evaluate_assemblies:
+	input:
+		expand(rules.eva_x_gather_evaluations.output, sample=s_with_ass, evaluator=config["evaluate_assemblies"]["evaluator"])
 
 rule test_marvel:
 	input:
