@@ -17,3 +17,10 @@
 ./demogenas -m assemble -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" --dry -s "-pr"
 
 ./demogenas -m assemble -t serial --threads=4 --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Sak02" -s "-pr --until sort_bam -n"
+
+#gather assemblies with some extras to check if the file is newer
+./demogenas -m prepare_assemblies -t serial --configfile=data/testdata/test.config.yaml -i "-B $DATA" --select="fastq_only" --dry -s "-pr"
+
+#developing busco
+snakemake all_busco -s Snakefile_busco -pr -n --until busco
+
