@@ -84,7 +84,7 @@ First, run `prepare_assmblies` mode - this will gather all assemblies that are f
 
 Now, to evaluate with the methods as specified in the config file, run `evaluate_assemblies` like e.g. so:
 ```bash
-./demogenas -m evaluate_assemblies -t serial --configfile=data/testdata/test.config.yaml -i "-B $DATA" --select="fastq_only"
+./demogenas -m evaluate_assemblies -t serial --configfile=data/testdata/test.config.yaml --select="fastq_only"
 ```
 
 Note that busco is not yet incorporated - just placeholder rules for now.
