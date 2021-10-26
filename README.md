@@ -75,3 +75,17 @@ Note that for a sample comprising only fast5 data none of the illumina specific 
 ./demogenas -t serial -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
 ```
 
+We have extra modes to evaluate your assemblies - this can be done at any time, even if not all assemblies are finished yet.
+
+First, run `prepare_assmblies` mode - this will gather all assemblies that are finished at this stage.
+```bash
+./demogenas -m prepare_assemblies -t serial --configfile=data/testdata/test.config.yaml --select="fastq_only"
+```
+
+Now, to evaluate with the methods as specified in the config file, run `evaluate_assemblies` like e.g. so:
+```bash
+./demogenas -m evaluate_assemblies -t serial --configfile=data/testdata/test.config.yaml -i "-B $DATA" --select="fastq_only"
+```
+
+Note that busco is not yet incorporated - just placeholder rules for now.
+
