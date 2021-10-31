@@ -54,18 +54,113 @@ rule eva_quast:
 		"""
 
 
+#rule eva_busco:
+#	input:
+#		assembly = "results/{sample}/assembly/evaluation/assemblies/{combination}.fasta",
+#	output:
+#		"results/{sample}/assembly/evaluation/busco/{combination}.busco.ok"
+#	shell:
+#		"""
+#		touch {output}
+#		"""
+
+rule download_busco_set:
+	output:
+		busco_set = directory("results/{sample}/assembly/evaluation/busco/busco_set/"+config["evaluate_assemblies"]["busco"]["set"]),
+		done = "results/{sample}/assembly/evaluation/busco/busco_set/download_busco_set.done"
+	params:
+		set = config["evaluate_assemblies"]["busco"]["set"],
+	log:
+		log = "results/{sample}/logs/download_busco_set.log.txt"
+	shell:
+		"""
+		echo -e "[$(date)]\\tBUSCO set specified: {params.set}" 2>&1 | tee {log}
+		if [ -d {output.busco_set} ]; then rm -rf {output.busco_set}; fi
+		mkdir {output.busco_set}
+
+		base_url="https://busco-data.ezlab.org/v5/data/lineages"
+		current=$(curl -s $base_url/ | grep "{params.set}" | cut -d ">" -f 2 | sed 's/<.*//')
+		echo -e "[$(date)]\\tCurrent version is: $current" 2>&1 | tee -a {log}
+		echo -e "[$(date)]\\tDownloading .." 2>&1 | tee -a {log}
+		wget -q -c $base_url/$current -O - --no-check-certificate | tar -xz --strip-components 1 -C {output.busco_set}/
+
+		echo -ne "[$(date)]\\tDone!\\n" 2>&1 | tee -a {log}
+		touch {output.done}
+		"""
+
 rule eva_busco:
 	input:
 		assembly = "results/{sample}/assembly/evaluation/assemblies/{combination}.fasta",
+		busco_set = "results/{sample}/assembly/evaluation/busco/busco_set/"+config["evaluate_assemblies"]["busco"]["set"]
 	output:
-		"results/{sample}/assembly/evaluation/busco/{combination}.busco.ok"
+		done = "results/{sample}/assembly/evaluation/busco/{combination}.busco.done",
+		output = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/software_output.tar.gz",
+		logs = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/logs.tar.gz",
+		full_table = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/full_table_busco.tsv",
+		short_summary ="results/{sample}/assembly/evaluation/busco/{combination}/run_busco/short_summary_busco.txt",
+		missing_busco_list ="results/{sample}/assembly/evaluation/busco/{combination}/run_busco/missing_busco_list_busco.tsv",
+		single_copy_buscos = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/single_copy_busco_sequences.tar",
+		single_copy_buscos_tarlist = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/single_copy_busco_sequences.txt"
+
+	threads: int(config["threads"]["busco"])
+	shadow: "shallow"
+	log:
+		log = "results/{sample}/logs/busco.{combination}.log.txt"
+	params:
+		wd = os.getcwd(),
+		sp = config["evaluate_assemblies"]["busco"]["augustus_species"],
+		additional_params = config["evaluate_assemblies"]["busco"]["additional_parameters"],
+		mode = "genome",
+		augustus_config_in_container = "/usr/local/config",
+		set = config["evaluate_assemblies"]["busco"]["set"]
+	singularity:
+		"docker://ezlabgva/busco:v5.2.1_cv1"
 	shell:
 		"""
-		touch {output}
+		# prepare stripped down version auf augustus config path.
+		# this is introduced to lower the number of files.
+		mkdir augustus
+		cp -R {params.augustus_config_in_container}/cgp augustus
+		cp -R {params.augustus_config_in_container}/extrinsic augustus
+		cp -R {params.augustus_config_in_container}/model augustus
+		cp -R {params.augustus_config_in_container}/profile augustus
+		mkdir augustus/species
+		cp -R {params.augustus_config_in_container}/species/generic augustus/species/
+		
+		if [ -d {params.augustus_config_in_container}/species/{params.sp} ]
+		then
+			cp -R {params.augustus_config_in_container}/species/{params.sp} augustus/species
+		fi		
+
+		export AUGUSTUS_CONFIG_PATH=$(pwd)/augustus
+		
+		echo "Assembly used for BUSCO is {input.assembly}" 2>&1 | tee {log}
+		busco -i {input.assembly} -f --out {wildcards.combination} -c {threads} --augustus --augustus_species {params.sp} --lineage_dataset $(pwd)/{input.busco_set} -m {params.mode} {params.additional_params} 2>&1 | tee -a {log}
+		# do some cleanup to save space
+		echo -e "\\n[$(date)]\\tCleaning up after BUSCO to save space" 2>&1 | tee -a {log}
+		basedir=$(pwd)
+		cd {wildcards.combination}/run_{params.set}
+		mkdir software_outputs
+		mv *_output software_outputs
+		$basedir/bin/tar_folder.sh $basedir/{output.output} software_outputs 2>&1 | tee -a $basedir/{log}
+		cd ..
+		$basedir/bin/tar_folder.sh $basedir/{output.logs} logs 2>&1 | tee -a $basedir/{log}
+		cd ..
+		tar -pcf {output.single_copy_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences single_copy_busco_sequences 
+		tar -tvf {output.single_copy_buscos} > {output.single_copy_buscos_tarlist} 2>&1 | tee -a $basedir/{log}
+
+		#move output files:
+		mv {wildcards.combination}/run_{params.set}/full_table.tsv {output.full_table}
+		mv {wildcards.combination}/run_{params.set}/short_summary.txt {output.short_summary}
+		mv {wildcards.combination}/run_{params.set}/missing_busco_list.tsv {output.missing_busco_list}
+		
+		#touch checkpoint
+		touch {output.done}
 		"""
+
 rule eva_gather_busco:
 	input:
-		expand("results/{sample}/assembly/evaluation/busco/{combination}.busco.ok", sample=s_with_ass, combination=combinations)
+		expand("results/{sample}/assembly/evaluation/busco/{combination}.busco.done", sample=s_with_ass, combination=combinations)
 	output:
 		"results/{sample}/assembly/busco/busco.done"
 	shell:

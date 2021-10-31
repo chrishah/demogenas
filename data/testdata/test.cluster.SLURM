@@ -48,7 +48,7 @@ eva_plot_k_hist:
 
 cor_bless_by_k:
    J: BBK
-   time: "10:00:00"
+   time: "24:00:00"
    mem: 20G
 cor_find_best_bless:
    J: FBK
@@ -66,7 +66,7 @@ cor_correct_spades:
    N: 1
    qos: mem_0384
    partition: mem_0384
-   time: "05:00:00"
+   time: "24:00:00"
 cor_gather_illumina_corrected:
    J: GIC
    time: "00:00:10"
@@ -132,8 +132,8 @@ eva_quast:
    time: "01:00:00"
 eva_busco:
    J: BUS
-   mem: "20G"
-   time: "12:00:00"
+   mem: "10G"
+   time: "04:00:00"
 eva_gather_busco:
    J: GBU
    time: "00:00:10"

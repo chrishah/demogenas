@@ -39,6 +39,10 @@ assemble:
 evaluate_assemblies:
    evaluator: ["quast", "busco"]
    minlength: 500
+   busco:
+      set: "arthropoda_odb10"
+      augustus_species: "fly"
+      additional_parameters: ""
 
 #ectools:
 #   ec_concurrency: 100
@@ -62,3 +66,4 @@ threads:
    minia: 10
    platanus: 90
    spades: 90
+   busco: 4
