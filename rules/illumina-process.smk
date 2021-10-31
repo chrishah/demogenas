@@ -7,8 +7,8 @@ rule pre_prepare_fastq:
 		reverse = "results/{sample}/Illumina/raw_reads/from_fastq/{lib}/{sample}.{lib}.raw.2.fastq.gz"
 	shell:
 		"""
-		ln -s {input.forward} {output.forward}
-		ln -s {input.reverse} {output.reverse}
+		ln -s $(pwd)/{input.forward} $(pwd)/{output.forward}
+		ln -s $(pwd)/{input.reverse} $(pwd)/{output.reverse}
 		"""
 rule pre_sort_bam:
 	input:
