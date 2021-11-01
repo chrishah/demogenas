@@ -123,10 +123,10 @@ rule eva_fastqc_raw:
 
 rule eva_fastqc_trimmed:
 	input:
-		f_paired = input_for_clean_trim_fp,
-		r_paired = input_for_clean_trim_rp,
-		f_unpaired = input_for_clean_trim_fo,
-		r_unpaired = input_for_clean_trim_ro
+		f_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz",
+		r_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz",
+		f_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz",
+		r_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz"
 	params:
 		wd = os.getcwd(),
 		lib = "{lib}",
