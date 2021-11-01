@@ -91,7 +91,8 @@ rule download_busco_set:
 rule eva_busco:
 	input:
 		assembly = "results/{sample}/assembly/evaluation/assemblies/{combination}.fasta",
-		busco_set = "results/{sample}/assembly/evaluation/busco/busco_set/"+config["evaluate_assemblies"]["busco"]["set"]
+		busco_set = "results/{sample}/assembly/evaluation/busco/busco_set/"+config["evaluate_assemblies"]["busco"]["set"],
+		script = "bin/tar_folder.sh"
 	output:
 		done = "results/{sample}/assembly/evaluation/busco/{combination}.busco.done",
 		output = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/software_output.tar.gz",
@@ -103,7 +104,7 @@ rule eva_busco:
 		single_copy_buscos_tarlist = "results/{sample}/assembly/evaluation/busco/{combination}/run_busco/single_copy_busco_sequences.txt"
 
 	threads: int(config["threads"]["busco"])
-	shadow: "shallow"
+	shadow: "minimal"
 	log:
 		log = "results/{sample}/logs/busco.{combination}.log.txt"
 	params:
