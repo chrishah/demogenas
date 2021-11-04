@@ -145,7 +145,7 @@ rule cor_correct_spades:
 		sample = "{sample}",
 		dir = "results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected",
 	singularity:
-		"docker://chrishah/spades:v3.14.0"
+		"docker://reslp/spades:3.15.3"
 	threads: config["threads"]["spades_correct"]
 	resources:
 		mem_gb=375

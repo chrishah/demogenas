@@ -249,7 +249,7 @@ rule ail_spades:
 		kmode = "{kmode}",
 		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
 	singularity:
-		"docker://chrishah/spades:v3.14.0"
+		"docker://reslp/spades:3.15.3"
 #	shadow: "minimal"
 	threads: config["threads"]["spades"]
 	resources:
