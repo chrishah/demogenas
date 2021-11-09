@@ -208,12 +208,16 @@ rule ail_platanus:
 		-t {threads} \
 		-m {resources.mem_gb} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
+		#filtering paired end reads by length (minimum 100)
+		echo -e "\n$(date)\tFiltering paired end reads by length (mininum {params.min} bp) before scaffolding" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		paste <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; chomp $p; chomp $q; @s=split("\\t",$s); if ((length($s[0]) >= {params.min}) && (length($s[1]) >= {params.min})){{@h=split("\\t",$h); $h[0] =~ s/^@/>/g; $h[1] =~ s/^@/>/g; @q=split("\\t",$q); print STDOUT "$h[0]\\n$s[0]\\n"; print STDERR "$h[1]\\n$s[1]\\n";}}' 1> {wildcards.sample}.min{params.min}.1.fasta 2> {wildcards.sample}.min{params.min}.2.fasta
+
 		echo -e "\n$(date)\tRunning platanus scaffold" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 		platanus scaffold \
 		-o {params.sample} \
 		-c {params.sample}_contig.fa \
 		-b {params.sample}_contigBubble.fa \
-		-IP1 <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) \
+		-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
 		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 #		-IP1 temp.f1.fasta temp.f2.fasta \
 
@@ -225,6 +229,7 @@ rule ail_platanus:
 		-IP1 <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) \
 		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
+		rm {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta
 		touch platanus.ok
 		"""
 		#filtering paired end reads by length (minimum 100)
@@ -246,6 +251,7 @@ rule ail_spades:
 		sample = "{sample}",
 		dir = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}",
 		defaultks = "21,33,55,77",
+		longks = "21,33,55,77,99,127",
 		kmode = "{kmode}",
 		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
 	singularity:
@@ -256,16 +262,32 @@ rule ail_spades:
 		mem_gb=750
 	shell:
 		"""
-		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
+		echo -e "[$(date)]\\tHost: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
 		bestk=$(cat {input.bestk})
-		if [ $bestk -eq 0 ]
+		if [ $bestk -eq 0 ] && [ "{params.kmode}" == "bestk" ]
 		then
-			echo -e "No optimal k found" 1> {log.stdout} 2> {log.stderr}
+			echo -e "[$(date)]\\tNo optimal k found" 1> {log.stdout} 2> {log.stderr}
 			touch {output.ok}
 			exit 0
 		else
-			ks=$(echo -e "{params.defaultks},$(cat {input.bestk})" | tr ',' '\\n' | sort -n | tr '\\n' ',' | sed 's/,$//')
-			krange=$(if [[ "{params.kmode}" == "bestk" ]]; then echo "-k $ks"; else echo "-k auto"; fi)
+			if [[ "{params.kmode}" == "default" ]]
+			then
+				echo -e "[$(date)]\\tusing default kmer range" 1>> {log.stdout} 2>> {log.stderr}
+				krange="-k auto"
+			elif [[ "{params.kmode}" == "bestk" ]]
+			then
+				echo -e "[$(date)]\\tchecking read lengths" 1>> {log.stdout} 2>> {log.stderr}
+				longest_read=$(for f in {input.reads}; do head -n 40000 <(zcat $f) | sed -n '2~4p'; done | perl -ne 'chomp; if (length($_) > $length){{$length=length($_)}}; if (eof()){{print "$length\\n"}}')
+				echo -e "[$(date)]\\tlongest read was $longest_read" 1>> {log.stdout} 2>> {log.stderr}
+				if [ "$longest_read" -ge 250 ]
+				then
+					ks=$(echo -e "{params.longks},$bestk" | tr ',' '\\n' | sort -n | uniq | tr '\\n' ',' | sed 's/,$//')
+				else
+					ks=$(echo -e "{params.defaultks},$bestk" | tr ',' '\\n' | sort -n | uniq | tr '\\n' ',' | sed 's/,$//')
+				fi
+				echo -e "[$(date)]\\tusing kmer range of: $ks" 1>> {log.stdout} 2>> {log.stderr}
+				krange="-k $ks"
+			fi
 		fi
 
 		if [ ! -d {params.dir} ]
@@ -277,6 +299,7 @@ rule ail_spades:
 
 		cd {params.dir}
 
+		echo -e "[$(date)]\\tStarting SPAdes" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 		spades.py \
 		-o ./{params.sample} \
 		-1 {params.wd}/{input.reads[0]} -2 {params.wd}/{input.reads[1]} -s {params.wd}/{input.reads[2]} \
