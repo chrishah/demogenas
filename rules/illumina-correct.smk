@@ -34,27 +34,28 @@ rule cor_bless_by_k:
 		"""
 
 
-rule cor_find_best_bless:
-	input:
-		expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
-	output:
-		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-bestk-corrected/bless-bestk-correct.ok"
-	log:
-		stdout = "results/{sample}/logs/bless-bestk-{trimmer}.stdout.txt",
-		stderr = "results/{sample}/logs/bless-bestk-{trimmer}.stderr.txt"
-	benchmark: "results/{sample}/benchmarks/bless-bestk-{trimmer}.txt"
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-	singularity:
-		"docker://chrishah/bless:v1.02"
-	threads: 2
-	shadow: "minimal"
-	shell:
-		"""
-		#read in outputs from the previous bless runs and decide on best k
-		touch {output.ok}
-		"""
+#rule cor_find_best_bless:
+#	input:
+#		expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
+#	output:
+#		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-bestk-corrected/bless-bestk-correct.ok"
+#	log:
+#		stdout = "results/{sample}/logs/bless-bestk-{trimmer}.stdout.txt",
+#		stderr = "results/{sample}/logs/bless-bestk-{trimmer}.stderr.txt"
+#	benchmark: "results/{sample}/benchmarks/bless-bestk-{trimmer}.txt"
+#	params:
+#		wd = os.getcwd(),
+#		sample = "{sample}",
+#	singularity:
+#		"docker://chrishah/bless:v1.02"
+#	threads: 2
+#	shadow: "minimal"
+#	shell:
+#		"""
+#		#read in outputs from the previous bless runs and decide on best k
+#		touch {output.ok}
+#		"""
+
 rule cor_bless_pe:
 	input:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
@@ -111,7 +112,7 @@ rule cor_bless_se:
 	threads: config["threads"]["bless"]
 	shell:
 		"""
-		./bin/gather_bless_stats.sh {input.bless_runs} > {params.dir}/bless_stats-se.tsv
+		./bin/gather_bless_stats.sh {wildcards.sample} {input.bless_runs} > {params.dir}/bless_stats-se.tsv
 
 		bestk=$(tail -n 1 {params.dir}/bless_stats-se.tsv | cut -f 1)
 		echo -e "\\n\\n[$(date)]\tCorrecting single end reads with bless - k: $bestk" 2>&1 | tee {log}
