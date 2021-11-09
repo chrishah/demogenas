@@ -1,3 +1,4 @@
+trimmed_list_for_merging = ["None"]
 #if merging is not to be done at 'corrected' stage, reset the list of correctors to None
 if not "corrected" in config["illumina_merge"]["merge_at_stage"]:
 	correct_list_for_merging = ["None"]
