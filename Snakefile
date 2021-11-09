@@ -10,7 +10,6 @@ wildcard_constraints:
 #get stuff from config file
 k = config["assemble"]["default_k"]
 #ec_concurrency = config["ectools"]["ec_concurrency"]
-abyss_ass_to_scaffold = config["abyss"]["assembly_to_scaffold"]
 longcor = config["long_correction"]
 
 marvel_batches_n = 20
@@ -62,7 +61,8 @@ rule merge_illumina:
 
 rule ont_call:
 	input:
-		expand("results/{units.sample}/reads/ont/{basecaller}/{units.lib}/{units.sample}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
+		expand(rules.bca_x_gather_called_ont_reads.output, sample=fast5_units.itertuples())
+#		expand("results/{units.sample}/reads/ont/{basecaller}/{units.lib}/{units.sample}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list),
 		
 rule long_correct:
 	input:

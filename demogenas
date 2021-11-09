@@ -13,6 +13,7 @@ usage() {
 	-m eval_illumina
 	-m correct_illumina
 	-m merge_illumina
+	-m call_ont
 	-m assemble
 	-m prepare_assemblies
 	-m evalutate_assemblies"
@@ -115,6 +116,9 @@ elif [[ $RUNMODE == "correct_illumina" ]]; then
 elif [[ $RUNMODE == "merge_illumina" ]]; then
 	mycmd+=(merge_illumina --until mer_gather_illumina_merged)
 	printcmd=$printcmd"merge_illumina --until gather_illumina_merged "
+elif [[ $RUNMODE == "call_ont" ]]; then
+	mycmd+=(ont_call --until bca_x_gather_called_ont_reads)
+	printcmd=$printcmd"ont_call --until bca_x_gather_called_ont_reads "
 #elif [[ $RUNMODE == "assemble_short" ]]; then
 #	mycmd+=(assemble_short)
 #elif [[ $RUNMODE == "assemble_long" ]]; then

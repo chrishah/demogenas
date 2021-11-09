@@ -11,14 +11,14 @@ rule bca_guppy:
 		sample = "{sample}",
 		unit = "{unit}",
 		dir = "results/{sample}/reads/ont/guppy/{lib}",
-		kit = "SQK-LSK110", #"SQK-LSK109", #"SQK-LSK110",
-		flowcell = "FLO-MIN111", #"FLO-MIN106", #"FLO-MIN111",
-		optional = "--min_qscore 5", #--disable_qscore_filtering 
+		kit = config["ont_basecalling"]["guppy"]["kit"],
+		flowcell = config["ont_basecalling"]["guppy"]["flowcell"],
+		optional = config["ont_basecalling"]["guppy"]["optional_params"],
 		nbatches = config["ont_basecalling"]["concurrency"],
 		minlength = config["ont_basecalling"]["minlength"],
 	singularity: "docker://chrishah/guppy:4.5.4-66c1a775"
 #	shadow: "minimal"
-	threads: 30
+	threads: config["threads"]["guppy"]
 	resources:
 		mem_gb=10
 	shell:
@@ -27,35 +27,35 @@ rule bca_guppy:
 		unit={params.unit}
 		step={params.nbatches}
 		count=0
-
+		echo "$(date)"
 #		filecount=$(ls -1rt {input.dir} | wc -l)
 #		if [[ $unit -le $filecount ]]
 #		then
-			for f in $(ls -1rt {input.dir} | sed -n "$unit~$step p")
-			do
-				echo -e "\\n$(date) - Processing file $f (temp suffix: $unit-$count)"
-				if [ ! -f $unit-$count.min-{params.minlength}.fastq.gz ]
-				then
-					if [ -d $unit-$count ]; then rm -rf $unit-$count/*; else mkdir $unit-$count; fi
-					echo -e "$(date) - basecalling"
-					guppy_basecaller --input_file_list <(echo {input.dir}/$f) -s $unit-$count --cpu_threads_per_caller $(( {threads} - 1 )) --flowcell {params.flowcell} --kit {params.kit} {params.optional}
-					cat $(find ./$unit-$count -name "*fastq") | \
-						perl -ne '$h=$_; $s=<>; $p=<>; $q=<>; if (length($s) > {params.minlength}){{print "$h$s$p$q"}}' | gzip > $unit-$count.min-{params.minlength}.fastq.gz.tmp
-					mv $unit-$count.min-{params.minlength}.fastq.gz.tmp $unit-$count.min-{params.minlength}.fastq.gz
-					cat $unit-$count/sequencing_summary.txt >> sequencing_summary-$unit.txt
-	#				cat $unit-$count/*.log >> {params.wd}/{log.stdout}
-					rm -rf $unit-$count
-				fi
-				let "count+=1"
-				echo -e "$(date) - Done"
-			done 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
-			cat $unit-*fastq.gz > $unit.min-{params.minlength}.fastq.gz
-			rm $unit-*fastq.gz
-			ln -s $unit.min-{params.minlength}.fastq.gz {params.wd}/{output.fastq}
-#		else
-#			echo -e "\\n$(date) - there are only $filecount files to process - creating dummyfile '{params.wd}/{output.fastq}' and finishing up" > {params.wd}/{log.stdout}
-#			touch {params.wd}/{output.fastq} 2> {params.wd}/{log.stderr}
-#		fi
+		for f in $(ls -1rt {params.wd}/{input.dir} | sed -n "$unit~$step p")
+		do
+			echo -e "\\n$(date) - Processing file $f (temp suffix: $unit-$count)"
+			if [ ! -f $unit-$count.min-{params.minlength}.fastq.gz ]
+			then
+				if [ -d $unit-$count ]; then rm -rf $unit-$count/*; else mkdir $unit-$count; fi
+				echo -e "$(date) - basecalling"
+				guppy_basecaller --input_file_list <(echo {params.wd}/{input.dir}/$f) -s $unit-$count --cpu_threads_per_caller $(( {threads} - 1 )) --flowcell {params.flowcell} --kit {params.kit} {params.optional}
+				cat $(find ./$unit-$count -name "*fastq" | grep -v "$unit-$count/fail/") | \
+					perl -ne '$h=$_; $s=<>; $p=<>; $q=<>; if (length($s) > {params.minlength}){{print "$h$s$p$q"}}' | gzip > $unit-$count.min-{params.minlength}.fastq.gz.tmp
+				mv $unit-$count.min-{params.minlength}.fastq.gz.tmp $unit-$count.min-{params.minlength}.fastq.gz
+				cat $unit-$count/sequencing_summary.txt >> sequencing_summary-$unit.txt
+#				cat $unit-$count/*.log >> {params.wd}/{log.stdout}
+				rm -rf $unit-$count
+			fi
+			let "count+=1"
+			echo -e "$(date) - Done"
+		done 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+		cat $unit-*fastq.gz > $unit.min-{params.minlength}.fastq.gz
+		rm $unit-*fastq.gz
+		ln -s $unit.min-{params.minlength}.fastq.gz {params.wd}/{output.fastq}
+#	else
+#		echo -e "\\n$(date) - there are only $filecount files to process - creating dummyfile '{params.wd}/{output.fastq}' and finishing up" > {params.wd}/{log.stdout}
+#		touch {params.wd}/{output.fastq} 2> {params.wd}/{log.stderr}
+#	fi
 		"""
 
 rule bca_bonito_cpu:
@@ -166,4 +166,12 @@ rule bca_flappie:
 #			touch {params.wd}/{output.fastq} 2> {params.wd}/{log.stderr}
 #		fi
 		"""
-
+rule bca_x_gather_called_ont_reads:
+	input: 
+		expand("results/{{units.sample}}/reads/ont/{basecaller}/{units.lib}/{{units.sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list)
+	output: 
+		"results/{sample}/reads/ont/ont-calling.done"
+	shell:
+		"""
+		touch {output}
+		"""

@@ -13,17 +13,21 @@ illumina_merge:
 
 #ont basecallers
 ont_basecalling:
-   basecaller: ["guppy", "flappie"]  #, "flappie", "guppy"] #"bonito"]
-   concurrency: 10
-   minlength: 300
+   basecaller: ["guppy", "flappie"] #"bonito"]
+   concurrency: 50
+   minlength: 1000
+   guppy:
+      kit: "SQK-LSK109" #"SQK-LSK110",
+      flowcell: "FLO-MIN106" #"FLO-MIN111",
+      optional_params: "--min_qscore 5" #--disable_qscore_filtering
 
 #long read correction
 long_correction: ["ratatosk", "canucorrect", "consent"] #"ratatosk", "consent", "canu"]
 
-bless_k: [21,31,41]
+bless_k: [21,31,41,51,61,71,81]
 
 kmc:
-   max_mem_in_GB: 8
+   max_mem_in_GB: 24
    k: [21] #,31,41,51,61,71]
    mincount: 2
    maxcount: 1000000000
@@ -38,10 +42,10 @@ assemble:
 
 evaluate_assemblies:
    evaluator: ["quast", "busco"]
-   minlength: 500
+   minlength: 1000
    busco:
-      set: "arthropoda_odb10"
-      augustus_species: "fly"
+      set: "eukaryota_odb10"
+      augustus_species: "schistosoma"
       additional_parameters: ""
 
 #ectools:
@@ -52,13 +56,10 @@ evaluate_assemblies:
 #   minlength_in: 1000
 #   minlength_out: 900
 
-abyss:
-   assembly_to_scaffold: "tricormer" #may also be "tri-bestk" or others
-
 threads:
    samtools: 4
    trimmomatic: 24
-   kmc: 5
+   kmc: 24
    bless: 20
    spades_correct: 90
    mergepairs_usearch: 20
@@ -66,4 +67,6 @@ threads:
    minia: 10
    platanus: 90
    spades: 90
-   busco: 4
+   quast: 4
+   busco: 10
+   guppy: 10

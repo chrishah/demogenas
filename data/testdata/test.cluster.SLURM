@@ -22,10 +22,10 @@ pre_bam2fastq:
 tri_trimgalore:
    J: TRI
    mem: "10G"
-   time: "10:00:00"
+   time: "20:00:00"
 tri_gather_short_trimmed_by_lib:
    J: GSL
-   time: "00:00:10"
+   time: "00:30:00"
 eva_fastqc_raw:
    J: FQR
    time: "02:00:00"
@@ -40,7 +40,7 @@ eva_stats:
    time: "00:10:00"
 eva_kmc:
    J: KMC
-   time: "01:00:00"
+   time: "10:00:00"
 eva_plot_k_hist:
    J: PKH
    mem: "2G"
@@ -66,7 +66,7 @@ cor_correct_spades:
    N: 1
    qos: mem_0384
    partition: mem_0384
-   time: "24:00:00"
+   time: "72:00:00"
 cor_gather_illumina_corrected:
    J: GIC
    time: "00:00:10"
@@ -78,7 +78,7 @@ mer_setup_usearch:
 mer_usearch:
    J: MUS
    mem: "20G"
-   time: "05:00:00"
+   time: "20:00:00"
 mer_flash:
    J: FSH
    mem: "8G"
@@ -90,7 +90,7 @@ mer_gather_illumina_merged:
 
 ail_kmergenie:
    J: KMG
-   time: "03:00:00"
+   time: "10:00:00"
    mem: 20G
 ail_abyss:
    J: ABY
@@ -98,17 +98,17 @@ ail_abyss:
    ntasks: "threads"
    qos: mem_0384
    partition: mem_0384
-   time: "24:00:00"
+   time: "48:00:00"
 ail_minia:
    J: MIN
-   time: "05:00:00"
+   time: "10:00:00"
    mem: "40G"
 ail_platanus:
    J: PLA
    N: 1
    qos: mem_0384
    partition: mem_0384
-   time: "24:00:00"
+   time: "48:00:00"
 ail_spades:
    J: SPA
    N: 1
@@ -186,13 +186,16 @@ ahy_haslr:
    time: "48:00:00"
 bca_guppy:
    J: GUP
-   time: "15:00:00"
+   time: "08:00:00"
 bca_bonito_cpu:
    J: BOC
    time: "05:00:00"
 bca_flappie:
    J: FLA
    time: "20:00:00"
+bca_x_gather_called_ont_reads:
+   J: GCO
+   time: "00:00:05"
 cor_ratatosk:
    J: RTT
    N: 1
