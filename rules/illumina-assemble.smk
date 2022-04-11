@@ -46,7 +46,7 @@ rule ail_kmergenie:
 		stepk = 10,
 		maxk = 121
 	singularity: "docker://reslp/kmergenie:1.7051"
-	threads: 10
+	threads: config["threads"]["kmergenie"]
 	resources:
 		mem_gb = 20
 	shadow: "minimal"
@@ -100,7 +100,7 @@ rule ail_abyss:
 #	shadow: "minimal"
 	threads: config["threads"]["abyss"]
 	resources:
-		mem_gb=370
+		mem_gb=750
 	shell:
 		"""
 		export TMPDIR={params.wd}/{params.dir}/tmp
@@ -189,7 +189,7 @@ rule ail_platanus:
 #	shadow: "minimal"
 	threads: config["threads"]["platanus"]
 	resources:
-		mem_gb=365
+		mem_gb=350
 	shell:
 		"""
 		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
@@ -226,7 +226,7 @@ rule ail_platanus:
 		-o {params.sample} \
 		-c {params.sample}_scaffold.fa \
 		-f <(zcat {params.wd}/{input.reads[2]}) \
-		-IP1 <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) \
+		-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
 		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
 		rm {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta
@@ -311,6 +311,23 @@ rule ail_spades:
 
 		touch spades.ok
 		"""
+### this woudl be for restarting
+#		if [ ! -d {params.dir} ]
+#		then
+#			mkdir -p {params.dir}
+#		fi
+#
+#		cd {params.dir}
+#
+#		echo -e "[$(date)]\\tStarting SPAdes" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+#		spades.py \
+#		-o ./{params.sample} \
+#		$krange \
+#		--checkpoints last \
+#		-t $(( {threads} - 1 )) \
+#		--restart-from last \
+#		-m $(( {resources.mem_gb} - 5 )) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+###
 
 rule ail_gather_illumina_assemblies:
 	input:
