@@ -22,17 +22,17 @@ pre_bam2fastq:
 tri_trimgalore:
    J: TRI
    mem: "10G"
-   time: "20:00:00"
+   time: "10:00:00"
 tri_gather_short_trimmed_by_lib:
    J: GSL
-   time: "00:30:00"
+   time: "05:30:00"
 eva_fastqc_raw:
    J: FQR
-   time: "02:00:00"
+   time: "05:00:00"
    mem: "6G"
 eva_fastqc_trimmed:
    J: FQT
-   time: "02:00:00"
+   time: "08:00:00"
    mem: "6G"
 eva_stats:
    J: STA
@@ -40,7 +40,7 @@ eva_stats:
    time: "00:10:00"
 eva_kmc:
    J: KMC
-   time: "10:00:00"
+   time: "40:00:00"
 eva_plot_k_hist:
    J: PKH
    mem: "2G"
@@ -64,9 +64,9 @@ cor_bless_se:
 cor_correct_spades:
    J: CSP
    N: 1
-   qos: mem_0384
-   partition: mem_0384
-   time: "72:00:00"
+   qos: mem_0768
+   partition: mem_0768
+   time: "48:00:00"
 cor_gather_illumina_corrected:
    J: GIC
    time: "00:00:10"
@@ -90,31 +90,34 @@ mer_gather_illumina_merged:
 
 ail_kmergenie:
    J: KMG
-   time: "10:00:00"
+   time: "30:00:00"
    mem: 20G
 ail_abyss:
    J: ABY
    N: 1
+   qos: mem_0768
+   partition: mem_0768
    ntasks: "threads"
-   qos: mem_0384
-   partition: mem_0384
-   time: "48:00:00"
+   time: "72:00:00"
+   dependency: "Singleton"
 ail_minia:
    J: MIN
-   time: "10:00:00"
-   mem: "40G"
+   time: "30:00:00"
+   mem: "20G"
 ail_platanus:
    J: PLA
    N: 1
    qos: mem_0384
    partition: mem_0384
-   time: "48:00:00"
+   time: "72:00:00"
+   dependency: "Singleton"
 ail_spades:
    J: SPA
    N: 1
    qos: mem_0768
    partition: mem_0768
-   time: "48:00:00"
+   time: "72:00:00"
+   dependency: "Singleton"
 ail_gather_illumina_assemblies:
    J: GIA
    mem: "4G"
@@ -137,6 +140,30 @@ eva_busco:
 eva_gather_busco:
    J: GBU
    time: "00:00:10"
+eva_bowtie2_index:
+   J: BOI
+   time: "00:30:00"
+   mem: "16G"
+eva_bowtie2_mapping:
+   J: BOM
+   time: "03:00:00"
+   mem: "8G"
+eva_conversion_samtools:
+   J: CST
+   time: "02:00:00"
+   mem: "8G"
+eva_remove_duplicates:
+   J: RMD
+   time: "05:00:00"
+   mem: "32G"
+eva_index_duprmvd:
+   J: SAI
+   time: "03:00:00"
+   mem: "8G"
+eva_blobtools:
+   J: BLO
+   time: "03:00:00"
+   mem: "8G"
 eva_x_gather_evaluations:
    J: GEV
    time: "00:00:10"
@@ -186,7 +213,7 @@ ahy_haslr:
    time: "48:00:00"
 bca_guppy:
    J: GUP
-   time: "08:00:00"
+   time: "70:00:00"
 bca_bonito_cpu:
    J: BOC
    time: "05:00:00"
@@ -201,7 +228,7 @@ cor_ratatosk:
    N: 1
    qos: mem_0768
    partition: mem_0768
-   time: "70:00:00"
+   time: "20:00:00"
 cor_gather_corrected_by_lib:
    J: GCL
    time: "00:00:10"
