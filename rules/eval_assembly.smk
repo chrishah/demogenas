@@ -35,7 +35,15 @@ def gather_busco(wildcards):
 	for l in glob.glob("results/"+wildcards.sample+"/assembly_evaluation/assemblies/*.min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
 		print(l)
 		lisout.append("/".join(l.split("/")[:3])+"/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/"+".".join(l.split("/")[-1].split(".")[:-2])+".min"+str(config["evaluate_assemblies"]["minlength"])+".busco.done")
-#	print(wildcards.sample,str(lis),str(lisout))
+	print(wildcards.sample,str(lisout))
+	return lisout
+
+def gather_blobtools(wildcards):
+	lisout=[]
+	for l in glob.glob("results/"+wildcards.sample+"/assembly_evaluation/assemblies/*.min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
+		print(l)
+		lisout.append("/".join(l.split("/")[:3])+"/blobtools/"+config["evaluate_assemblies"]["busco"]["set"]+"/"+".".join(l.split("/")[-1].split(".")[:-2])+".min"+str(config["evaluate_assemblies"]["minlength"])+".blobtools.done")
+	print(wildcards.sample,str(lisout))
 	return lisout
 
 def gather_assemblies(wildcards):
@@ -138,9 +146,20 @@ rule eva_busco:
 		fi		
 
 		export AUGUSTUS_CONFIG_PATH=$(pwd)/augustus
-		
+	
+		threads=$(( {threads} / 2 ))
+		if [ "$threads" -eq 0 ]; then threads=1; fi
+
+		augustus_params=""	
 		echo "Assembly used for BUSCO is {input.assembly}" 2>&1 | tee {log}
-		busco -i {input.assembly} -f --out {wildcards.combination} -c {threads} --augustus --augustus_species {params.sp} --lineage_dataset $(pwd)/{input.busco_set} -m {params.mode} {params.additional_params} 2>&1 | tee -a {log}
+		if [[ -z "{params.sp}" ]] || [[ "{params.sp}" == "None" ]]
+		then
+			echo "using metaeuk" 2>&1 | tee {log}
+		else
+			echo "using augustus (species: {params.sp})" 2>&1 | tee {log}
+			augustus_params="--augustus --augustus_species {params.sp}"
+		fi
+		busco -i {input.assembly} -f --out {wildcards.combination} -c $threads $augustus_params --lineage_dataset $(pwd)/{input.busco_set} -m {params.mode} {params.additional_params} 2>&1 | tee -a {log}
 		# do some cleanup to save space
 		echo -e "\\n[$(date)]\\tCleaning up after BUSCO to save space" 2>&1 | tee -a {log}
 		basedir=$(pwd)
@@ -171,6 +190,26 @@ rule eva_gather_busco:
 #		expand("results/{sample}/assembly_evaluation/busco/{combination}.busco.done", sample=s_with_ass, combination=get_combs_per_sample(s_with_ass))
 	output:
 		"results/{sample}/assembly_evaluation/busco/busco.done"
+	shell:
+		"""
+		touch {output}
+		"""
+
+rule eva_blobtools:
+	input:
+		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.indexing_durmvd.done"
+	output:
+		"results/{sample}/assembly_evaluation/blobtools/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}.blobtools.done"
+	shell:
+		"""
+		touch {output}
+		"""
+
+rule eva_gather_blobtools:
+	input:
+		gather_blobtools
+	output:
+		"results/{sample}/assembly_evaluation/blobtools/blobtools.done"
 	shell:
 		"""
 		touch {output}
