@@ -14,7 +14,7 @@ rule cor_bless_by_k:
 	singularity:
 		"docker://chrishah/bless:v1.02"
 	resources:
-		mem_gb=20
+		mem_gb=50
 	threads: config["threads"]["bless"]
 	shell:
 		"""
@@ -149,7 +149,7 @@ rule cor_correct_spades:
 		"docker://reslp/spades:3.15.3"
 	threads: config["threads"]["spades_correct"]
 	resources:
-		mem_gb=375
+		mem_gb=150
 	shell:
 		"""
 		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
