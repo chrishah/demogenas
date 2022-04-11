@@ -16,7 +16,7 @@ if "select" in config:
 ##	print("###\nselect df")
 ##	print(df)
 	if df.empty:
-##		print("Error: Specified id(s) not in "+config["samples"], file=sys.stderr)
+		print("Error: Specified id(s) not in "+config["samples"], file=sys.stderr)
 		sys.exit()
 
 ### create non redundant list of sample IDS
@@ -30,6 +30,8 @@ df_fastq = df[df['f_fastq'].notna()]
 
 ### create dataframe containing just the samples that have data in the 'bam' column
 df_bam = df[df['bam'].notna()]
+print("df_bam: \n")
+print(df_bam)
 ## print("|".join(df_bam["lib"].tolist()))
 
 ### make dataframe with only the samples that contain Illumina data, i.e. data in columnis f_fastq r_fastq or bam
@@ -53,8 +55,9 @@ for lib in set(df.index.values.tolist()):
     else:
         unitdict[sample].append(str(lib))
 
-#print(unitdict)
+print("UNITDICT: "+str(unitdict))
 units = pd.DataFrame(dic).set_index(['sample','lib'], drop=False)
+print(str(units))
 units.index = units.index.set_levels(
     [i.astype(str) for i in units.index.levels])  # enforce str in index
 
@@ -77,7 +80,9 @@ units.index = units.index.set_levels(
 #print(Illumina_dict)
 
 illumina_units = units[units["lib"].isin(df_fastq["lib"].tolist()+df_bam["lib"].tolist())]
-#print(illumina_units)
+print("Illumina_units:")
+print(illumina_units)
+print()
 
 #long reads
 #df = pd.read_csv(config["samples"], sep="\t").set_index("lib", drop=False)
@@ -95,14 +100,16 @@ fast5_units = units[units["lib"].isin(df_fast5["lib"].tolist())]
 df_long = df[df['long'].notna()]
 
 def input_for_trimgalore_f(wildcards):
+	print("Input for trimming: "+str(wildcards.lib))
 	if wildcards.lib in df_fastq.index:
 		return "results/{sample}/Illumina/raw_reads/from_fastq/{lib}/{sample}.{lib}.raw.1.fastq.gz".format(lib=wildcards["lib"], sample=wildcards["sample"])
-	else:
+	elif wildcards.lib in df_bam.index:
 		return "results/{sample}/Illumina/raw_reads/from_bam/{lib}/{sample}.{lib}.raw.1.fastq.gz".format(lib=wildcards["lib"], sample=wildcards["sample"])
+
 def input_for_trimgalore_r(wildcards):
 	if wildcards.lib in df_fastq.index:
 		return "results/{sample}/Illumina/raw_reads/from_fastq/{lib}/{sample}.{lib}.raw.2.fastq.gz".format(lib=wildcards["lib"], sample=wildcards["sample"])
-	else:
+	elif wildcards.lib in df_bam.index:
 		return "results/{sample}/Illumina/raw_reads/from_bam/{lib}/{sample}.{lib}.raw.2.fastq.gz".format(lib=wildcards["lib"], sample=wildcards["sample"])
 		
 def input_for_clean_trim_fp(wildcards):
@@ -160,7 +167,7 @@ def get_raw_r_fastqs(wildcards):
 #	return pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["lib"], drop=False).loc[(wildcards.lib), ["r_fastq"]].dropna()
 #function that gets the path to the bam files
 def get_bam(wildcards):
-#	print(wildcards.lib)
+	print("get_bam: "+str(wildcards.lib))
 	if wildcards.lib in df_bam.index:
 		return df_bam.loc[(wildcards.lib), ["bam"]].dropna()
 #	else:
@@ -307,18 +314,20 @@ def find_new_assemblies(wildcards):
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/minia/*/bestk/*[0-9].contigs.fa"))
 		if ass == "platanus":
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/platanus/*/auto/*_gapClosed.fa"))
+	print("ALL ASSEMBLIES FOUND: "+str(lis))
 	for i in reversed(range(len(lis))):
 		prefix="-".join(lis[i].split("/")[3:6])
-#		print(prefix+" - results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta")
-		if glob.glob("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
-#			print("found: 'results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta'")
-##			print(str(os.path.getctime("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta"))+" results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta")
-##			print(str(os.path.getctime(lis[i]))+" "+lis[i])
-#			print("older file: "+str(min([lis[i], "results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta"], key=os.path.getctime)))
+#		print(prefix+" - results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".fasta")
+		if glob.glob("results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
+			print("found: 'results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".fasta'")
+#			print(str(os.path.getctime("results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".fasta"))+" results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".fasta")
+#			print(str(os.path.getctime(lis[i]))+" "+lis[i])
+#			print("older file: "+str(min([lis[i], "results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".fasta"], key=os.path.getctime)))
 			#delete from list if the original assembly file is older than the new one - nothing should be done - othterwise it will be returned by the input function
-			if os.path.getctime(lis[i]) < os.path.getctime("results/"+wildcards.sample+"/assembly/evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
+		
+			if os.path.getctime(lis[i]) <= os.path.getctime("results/"+wildcards.sample+"/assembly_evaluation/assemblies/"+prefix+".min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
 				del(lis[i])
-#	print(str(lis))
+	print("NEW ASSEMBLIES: "+str(lis))
 	return lis
 
 def find_samples_with_assemblies(all_samples):
