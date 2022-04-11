@@ -83,7 +83,8 @@ if (i <= end){
   
   abline(v=peak_kmer_coverage,lty=2)
   legend(x="topright", legend=c(paste(
-    " peak", kmer_size, "-mer coverage =", mode, "x\n",
+    " total data:", round(cum_read_length/1e+09,1), "Gbp\n",
+    "peak", kmer_size, "-mer coverage =", mode, "x\n",
     "peak read coverage =", round(read_coverage_peak, 2), "x\n",
     "est. genome size =", round(est_genome_size/1e+06,1), "Mb"))
     ,bty="n")
