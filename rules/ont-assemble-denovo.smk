@@ -12,9 +12,9 @@ rule alo_flye_raw:
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		options = "--genome-size 350m --asm-coverage 20" #e.g.:--genome-size 200m --asm-coverage 25
-	singularity: "docker://chrishah/flye:2.8.2-b1695"
-	shadow: "minimal"
+		options = "--genome-size 450m" # --asm-coverage 30 --resume" #e.g.:--genome-size 200m --asm-coverage 25
+	singularity: "docker://chrishah/flye:2.9-b1774"
+#	shadow: "minimal"
 	threads: 90
 	resources:
 		mem_gb=750
@@ -26,10 +26,11 @@ rule alo_flye_raw:
 		cat $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g') > {wildcards.sample}.{wildcards.basecaller}.fastq.gz
 
 		flye \
-		--out-dir {output.dir} \
+		--out-dir {output.dir}.temp \
 		--threads {threads} {params.options} \
 		--nano-raw {wildcards.sample}.{wildcards.basecaller}.fastq.gz 1>> {log.stdout} 2> {log.stderr}
 
+		mv {output.dir}.temp {output.dir}
 		touch {output.ok}
 		"""
 		
@@ -48,18 +49,20 @@ rule alo_flye_corrected:
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		options = "" #e.g.:--genome-size 200m --asm-coverage 25
-	singularity: "docker://chrishah/flye:2.8.2-b1695"
-	shadow: "minimal"
-	threads: 90
+		options = "--genome-size 450m" # --resume" #e.g.:--genome-size 200m --asm-coverage 25
+	singularity: "docker://chrishah/flye:2.9-b1774"
+#	shadow: "minimal"
+	threads: 92
 	resources:
 		mem_gb=750
 	shell:
 		"""
 		flye \
-		--out-dir {output.dir} \
+		--out-dir {output.dir}.temp \
 		--threads {threads} {params.options} \
 		--nano-corr {input.long} 1> {log.stdout} 2> {log.stderr}
+
+		mv {output.dir}.temp {output.dir}
 
 		touch {output.ok}
 		"""
@@ -93,6 +96,7 @@ rule alo_canu:
 		-p {sample} genomeSize={params.genome_size} \
 		useGrid=false {params.options} \
 		-nanopore {input.long} 1> {log.stdout} 2> {log.stderr}
+		touch {output.ok}
 		"""
 
 rule alo_canu_corrected:
@@ -110,21 +114,24 @@ rule alo_canu_corrected:
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		genome_size = "200m",
+		genome_size = "450m",
 		dir = "results/{sample}/assembly/canu/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
 		options = "" #
 	singularity: "docker://chrishah/canu:v2.1.1"
-	shadow: "minimal"
-	threads: 90
+#	shadow: "minimal"
+	threads: 92
 	resources:
 		mem_gb=750
 	shell:
 		"""
 		canu -assemble \
-		-d {params.dir}/{wildcards.sample} \
+		-d {params.dir}/{wildcards.sample}.temp \
 		-p {sample} genomeSize={params.genome_size} \
 		useGrid=false {params.options} \
 		-nanopore-corrected {input.long} 1> {log.stdout} 2> {log.stderr}
+
+		mv {params.dir}/{wildcards.sample}.temp {params.dir}/{wildcards.sample}
+		touch {output.ok}
 		"""
 
 
