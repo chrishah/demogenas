@@ -199,7 +199,7 @@ rule eva_blobtools:
 	input:
 		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.indexing_durmvd.done"
 	output:
-		"results/{sample}/assembly_evaluation/blobtools/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}.blobtools.done"
+		"results/{sample}/assembly_evaluation/blobtools/{combination}.blobtools.done"
 	shell:
 		"""
 		touch {output}
