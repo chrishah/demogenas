@@ -34,7 +34,10 @@ rule cor_ratatosk:
 		-l {wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.raw.fastq.gz \
 		-c {threads} -i {params.isize} -k {params.k1} -K {params.k2} -v {params.options} \
 		-o {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk 1>> {log.stdout} 2> {log.stderr}
-		gzip {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq
+
+#		gzip {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq
+		#replace and non-ACGT with random ACGT
+		cat {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq | perl -ne '@a=("A","T","G","C"); $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; @s=split("", $s); for ($i=0; $i<@s; $i++){{if ($s[$i] !~ /[AGCT]/){{$s[$i] = $a[int(rand(4))]}}}} $s = join("",@s); print "$h$s\\n+\\n$q"' | gzip > {params.dir}/{wildcards.sample}.{wildcards.lib}.{wildcards.basecaller}.ratatosk.fastq.gz
 		"""
 
 rule cor_gather_corrected_by_lib:
