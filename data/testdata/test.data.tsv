@@ -7,6 +7,8 @@ bam_only	bam_only-1			data/testdata/bam1.bam
 bam_only	bam_only-2			data/testdata/bam2.bam
 fastq_bam	fq-bam-fastq	data/testdata/fastq1.1.fastq.gz	data/testdata/fastq1.2.fastq.gz
 fastq_bam	fq-bam-bam			data/testdata/bam2.bam
+fast5_fastq	f5_fq-fq	data/testdata/fastq1.1.fastq.gz	data/testdata/fastq1.2.fastq.gz
+fast5_fastq	f5_fq-f5				data/testdata/fast5_run1
 all_types	alltypes-f5-1				data/testdata/fast5_run1
 all_types	alltypes-f5-2				data/testdata/fast5_run2
 all_types	alltypes-fq-1	data/testdata/fastq1.1.fastq.gz	data/testdata/fastq1.2.fastq.gz
