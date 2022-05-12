@@ -142,7 +142,7 @@ rule eva_fastqc_trimmed:
 	threads: 2
 	shell:
 		"""
-		fastqc -o ./ {input} 1> {log.stdout} 2> {log.stderr}
+		fastqc -t {threads} -o ./ {input} 1> {log.stdout} 2> {log.stderr}
 		mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trimgalore/{params.lib}/
 		touch {output}
 		
@@ -192,6 +192,7 @@ rule eva_kmc:
 #		pre = "results/{sample}/kmc/{sample}.k{k}.kmc_pre",
 #		suf = "results/{sample}/kmc/{sample}.k{k}.kmc_suf",
 		hist = "results/{sample}/kmc/{sample}.k{k}.histogram.txt",
+		genomescope = "results/{sample}/kmc/{sample}.k{k}.histogram.genomescope.txt"
 	shadow: "shallow"
 	shell:
 		"""
@@ -201,6 +202,7 @@ rule eva_kmc:
 		kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
 		#kmc_tools histogram {params.sample} -ci{params.mincount} -cx{params.maxcount} {output.hist}
 		kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
+		cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
 		"""
 
 rule reformat_read_headers:
