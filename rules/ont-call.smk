@@ -1,3 +1,24 @@
+def def_or_data(string,sample):
+	print(string)
+	elements = string.split("|")
+	default = config[elements[0]]
+	print("the dict is: "+str(default))
+	for i in range(1,len(elements)):
+		print("current key is: "+elements[i])
+		current = elements[i]
+		print(current)
+		print(current,i,default[current])
+		default = default[current]
+	
+	print("after loop: "+default)
+	if "-".join(elements) in df:
+		print("-".join(elements)+" is there")
+		print(df.set_index(['sample']))
+
+	
+def_or_data("ont_basecalling|guppy|flowcell","EcStj")
+#./demogenas -m assemble -t slurm -s "-pr --until bca_guppy" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Eubo -i "-B $DATA -B $BINFL" --select="EcStj,EsKje_Sa_w" --dry
+
 rule bca_guppy:
 	input:
 		dir = get_fast5_dir
@@ -16,7 +37,7 @@ rule bca_guppy:
 		optional = config["ont_basecalling"]["guppy"]["optional_params"],
 		nbatches = config["ont_basecalling"]["concurrency"],
 		minlength = config["ont_basecalling"]["minlength"],
-	singularity: "docker://chrishah/guppy:4.5.4-66c1a775"
+	singularity: "docker://chrishah/guppy:6.0.6-8a98bbcbd"
 #	shadow: "minimal"
 	threads: config["threads"]["guppy"]
 	resources:
