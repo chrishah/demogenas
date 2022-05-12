@@ -189,14 +189,14 @@ rule ahy_abyss_scaffold:
 		abyss = rules.ail_abyss.output.ok,
 		long = get_long_assembly_input
 	output:
-		ok = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok",
+		ok = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-None/abyss.ok",
 	log:
-		stdout = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stdout.txt",
-		stderr = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stderr.txt"
+		stdout = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-None.stdout.txt",
+		stderr = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-None.stderr.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
+		dir = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-None",
 		origdir = rules.ail_abyss.output.ok.replace("/abyss.ok",""),
 		defaultk = k
 	singularity: "docker://reslp/abyss:2.2.5"
@@ -228,10 +228,54 @@ rule ahy_abyss_scaffold:
 			bestk={params.defaultk}
 		fi
 
-#		inlong=$(for f in $(echo "{input.long}"); do echo {params.wd}/$f; done | tr '\\n' ' ')
 		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' long='longall' longall="{wildcards.sample}.{wildcards.basecaller}.fastq.gz" 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
 		
 		rm {wildcards.sample}.{wildcards.basecaller}.fastq.gz
+		touch {params.wd}/{output.ok}
+		"""
+rule ahy_abyss_scaffold_corrected:
+	input:
+		reads = get_illumina_assembly_input,
+		bestk = rules.ail_kmergenie.output.bestk,
+		abyss = rules.ail_abyss.output.ok,
+		long = get_long_corrected_assembly_input
+	output:
+		ok = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/abyss.ok",
+	log:
+		stdout = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stdout.txt",
+		stderr = "results/{sample}/logs/abyss_scaffold.{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}.stderr.txt"
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+		dir = "results/{sample}/assembly/abyss_scaffold/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}",
+		origdir = rules.ail_abyss.output.ok.replace("/abyss.ok",""),
+		defaultk = k
+	singularity: "docker://reslp/abyss:2.2.5"
+#	shadow: "minimal"
+	threads: 90
+	resources:
+		#can problably use much less memory
+		mem_gb=700
+	shell:
+		"""
+		export TMPDIR={params.wd}/{params.dir}/tmp
+		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
+
+		bestk=$(cat {input.bestk})
+
+		cd {params.dir}
+
+		#cp all relevant files from Illumina only assembly
+		for f in $(ls -1 {params.wd}/{params.origdir}/{params.sample}-* | grep -v "\-9\." | grep -v "\-1[0-9]\." | grep -v "\-stats"); do ln -fs $f .; done 
+		if [ $bestk -eq 0 ]
+		then
+			echo -e "Setting k to {params.defaultk}" 1> {params.wd}/{log.stdout}
+			touch k.set.manually.to.{params.defaultk}
+			bestk={params.defaultk}
+		fi
+
+		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' long='longall' longall="{params.wd}/{input.long}" 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+		
 		touch {params.wd}/{output.ok}
 		"""
 
@@ -461,13 +505,13 @@ rule ahy_haslr:
 		wd = os.getcwd(),
 		sample = "{sample}",
 		dir = "results/{sample}/assembly/haslr/{trimmer}-{corrector}-{merger}-{basecaller}",
-		genome_size = "350m",
+		genome_size = "450m",
 		defaultk = k,
 		minia_mode = "unitigs", #could also be contigs
-		cov_lr = 50,
+		cov_lr = 30,
 	singularity:
 		"docker://chrishah/haslr:0.8a1"
-	shadow: "minimal"
+#	shadow: "minimal"
 	threads: 90
 	resources:
 		mem_gb=750
@@ -477,7 +521,7 @@ rule ahy_haslr:
 		if [ $bestk -eq 0 ]
 		then
 			echo -e "[$(date)]\\tSetting k to {params.defaultk} (default)" 1> {log.stdout}
-			touch k.set.manually.to.{params.defaultk}
+			touch {params.dir}/k.set.manually.to.{params.defaultk}
 			bestk={params.defaultk}
 		else
 			echo -e "[$(date)]\\tSetting k to $bestk (determined by kmergenie)" 1> {log.stdout}
@@ -486,10 +530,10 @@ rule ahy_haslr:
 		#get all raw long reads (even if concurrency setting doesn't reflect the real number)
 		echo -e "[$(date)]\\tConcatenating the following files into {wildcards.sample}.{wildcards.basecaller}.fastq.gz prior to assembly" >> {log.stdout}
 		echo -e "$(ls -1 $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g'))" >> {log.stdout}
-		cat $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g') > {wildcards.sample}.{wildcards.basecaller}.fastq.gz
+		cat $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g') > {params.dir}/{wildcards.sample}.{wildcards.basecaller}.fastq.gz
 
-		haslr.py -t {threads} -o {params.dir}/{wildcards.sample} --minia-kmer $bestk --minia-asm {params.minia_mode} --cov-lr {params.cov_lr} -g {params.genome_size} -l {wildcards.sample}.{wildcards.basecaller}.fastq.gz -x nanopore -s {input.reads[0]} {input.reads[1]} {input.reads[2]} 1>> {log.stdout} 2> {log.stderr}
-
+		haslr.py -t {threads} -o {params.dir}/{wildcards.sample}.running --minia-kmer $bestk --minia-asm {params.minia_mode} --cov-lr {params.cov_lr} -g {params.genome_size} -l {params.dir}/{wildcards.sample}.{wildcards.basecaller}.fastq.gz -x nanopore -s {input.reads[0]} {input.reads[1]} {input.reads[2]} 1>> {log.stdout} 2> {log.stderr}
+		mv {params.dir}/{wildcards.sample}.running {output.dir}
 		echo -e "\\nExitcode: $?\\n"
 
 		touch {output.ok}
