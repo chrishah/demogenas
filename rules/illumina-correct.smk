@@ -14,7 +14,7 @@ rule cor_bless_by_k:
 	singularity:
 		"docker://chrishah/bless:v1.02"
 	resources:
-		mem_gb=50
+		mem_gb=config["max_mem_in_GB"]["bless"]
 	threads: config["threads"]["bless"]
 	shell:
 		"""
@@ -74,7 +74,7 @@ rule cor_bless_pe:
 		wd = os.getcwd(),
 		dir = "results/{sample}/errorcorrection/bless/{trimmer}"
 	resources:
-		mem_gb=20
+		mem_gb=config["max_mem_in_GB"]["bless"]
 	threads: config["threads"]["bless"]
 	shell:
 		"""
@@ -108,7 +108,7 @@ rule cor_bless_se:
 		wd = os.getcwd(),
 		dir = "results/{sample}/errorcorrection/bless/{trimmer}",
 	resources:
-		mem_gb=20
+		mem_gb=config["max_mem_in_GB"]["bless"]
 	threads: config["threads"]["bless"]
 	shell:
 		"""

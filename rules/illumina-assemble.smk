@@ -100,7 +100,7 @@ rule ail_abyss:
 #	shadow: "minimal"
 	threads: config["threads"]["abyss"]
 	resources:
-		mem_gb=750
+		mem_gb=config["max_mem_in_GB"]["abyss"]
 	shell:
 		"""
 		export TMPDIR={params.wd}/{params.dir}/tmp
@@ -189,7 +189,7 @@ rule ail_platanus:
 #	shadow: "minimal"
 	threads: config["threads"]["platanus"]
 	resources:
-		mem_gb=350
+		mem_gb=config["max_mem_in_GB"]["platanus"]
 	shell:
 		"""
 		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
@@ -253,7 +253,8 @@ rule ail_spades:
 		defaultks = "21,33,55,77",
 		longks = "21,33,55,77,99,127",
 		kmode = "{kmode}",
-		mode = "only-assembler" #could be careful, only-error-correction, only-assembler 
+		optional = "--isolate", 
+		mode = "only-assembler" #could be careful, only-error-correction, only-assembler,
 	singularity:
 		"docker://reslp/spades:3.15.3"
 #	shadow: "minimal"
@@ -307,7 +308,7 @@ rule ail_spades:
 		--checkpoints last \
 		--{params.mode} \
 		-t $(( {threads} - 1 )) \
-		-m $(( {resources.mem_gb} - 5 )) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		-m $(( {resources.mem_gb} - 5 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
 		touch spades.ok
 		"""
