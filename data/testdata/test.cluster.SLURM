@@ -9,7 +9,8 @@ __default__:
    time: "00:10:00"
    output: $(pwd)/log/%x-%j.stdout.txt
    error: $(pwd)/log/%x-%j.stderr.txt
-
+   mail-type: "BEGIN"
+   mail-user: "dummy@gmail.at"
 pre_prepare_fastq:
    J: PFQ
 pre_sort_bam:
@@ -107,8 +108,8 @@ ail_minia:
 ail_platanus:
    J: PLA
    N: 1
-   qos: mem_0384
-   partition: mem_0384
+   qos: mem_0768
+   partition: mem_0768
    time: "72:00:00"
    dependency: "Singleton"
 ail_spades:
