@@ -28,11 +28,12 @@ include: "rules/ont-correct.smk"
 include: "rules/ont-assemble-hybrid.smk"
 include: "rules/ont-assemble-denovo.smk"
 include: "rules/eval_assembly.smk"
+include: "rules/mapping.smk"
 
 
-
-
-
+print("Illumina_units in Snakefile")
+print(illumina_units)
+print(Illumina_process_df["sample"])
 
 #different all rules that run the pipeline particular stages
 rule eval_illumina:
@@ -42,7 +43,9 @@ rule eval_illumina:
 		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.lib}/{test.sample}.{test.lib}.fastqc.status.ok", test=illumina_units.itertuples()),
 		#trim and gather
 		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
-		lambda wildcards: expand("results/{test.sample}/plots/{test.sample}-k{k}-distribution-full.pdf", test=illumina_units.itertuples(), k=config["kmc"]["k"])
+		expand(rules.eva_plot_k_hist.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"])
+#		lambda wildcards: expand("results/{test.sample}/plots/{test.sample}-k{k}-distribution-full.pdf", test=illumina_units.itertuples(), k=config["kmc"]["k"])
+
 rule illumina_trim:
 	input:
 		#trim and gather
