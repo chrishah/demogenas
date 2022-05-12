@@ -24,3 +24,112 @@
 #developing busco
 snakemake all_busco -s Snakefile_busco -pr -n --until busco
 
+#prepare and evaluate Sylvia's assemblies
+./demogenas -m prepare_assemblies -t serial --configfile=data/config.Sylvia-genome --select="Sak02" --verbose --dry
+./demogenas -m evaluate_assemblies -t serial --configfile=data/config.Sylvia-genome --select="Sak02" --verbose --dry
+
+#run assemblies for other samples - BUT FIX RULENAMES IN CLUSTER CONFIG FIRST
+./demogenas -m assemble -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Pop49B_46" --dry -s "-pr"
+
+######################
+./demogenas -m evaluate_assemblies -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos -i "-B $DATA" -s "-pr" --dry --select="Ccasu"
+
+##
+./demogenas -m evaluate_assemblies -t serial --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos -i "-B $DATA" -s "-pr" --select="Capsp,Ccasu" --dry
+
+./demogenas -m assemble -t serial --threads=4 -s "-pr --until bca_guppy" --dry --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Eubo -i "-B $DATA -B $BINFL" --select="EcStj,EsKje_Sa_w"
+
+#rm all unneeded spades dirs from finished runs
+for dir in $(find ./results/ -name "spades.ok" | cut -d "/" -f 1-7); do rm -rfv $dir/*/K*; done
+for d in $(find ./results/ -name "minia.ok" | cut -d "/" -f 1-7); do rm -v $d/*unitigs.fa; done
+
+#change starttime for all pending jobs to now+1day
+for j in $(squeue -u $USER | grep " PD " | awk '{print $1}'); do scontrol update JobId=$j StartTime=now+1day; done
+#change starttime for all pending Spades jobs on large mem to now + 1 day
+for j in $(squeue -u $USER | grep " PD " | grep "_0768" | grep "SPA" | awk '{print $1}'); do scontrol update JobId=$j StartTime=now+1day; done
+
+#set starttime for all pending jobs on mem_0384 to now
+for j in $(squeue -u $USER | grep " PD " | grep "mem_0384" | awk '{print $1}'); do scontrol update JobId=$j StartTime=now; done
+
+#find jobs with begintime - sort by priority
+for j in $(squeue -u $USER | grep "Begin" | awk '{print $1}'); do echo "$j $(jobinfo $j | grep -e "Priority=" | awk '{print $1}' | cut -d "=" -f 2) $(jobinfo $j | grep "JobName")"; done | sort -n -k 2
+
+#find size differences of sample results
+du -h --max-depth=1 results/ | grep -P "G\t" | sed 's/G\t/\tG\t/' | sort -k 3 > size2; paste size size2 | perl -ne '@a=split("\t"); $diff=$a[3] - $a[0]; print "$diff\t$a[2]\n"'; mv size2 size
+
+#submit last Eubo assemblies
+#./demogenas -m assemble -t slurm -s "-pr" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Eubo -i "-B $DATA -B $BINFL" --select="EcrRog_Ssfm,EcrFus_Stwr" --dry
+#
+## fix behaviour when combination fast5 and fastq
+#problem seem to go away when the output of the plotting function is removed from the all rule - Snakefile line 45
+./demogenas -t serial -m eval_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_fastq
+
+## submit only for bless corrected assembly with platanus
+./demogenas -m assemble -t slurm -s "-pr --until ail_platanus" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Eubo.corrected_only -i "-B $DATA -B $BINFL" --select="EcrRog_Ssfm"
+
+#find unfinished platanus and finish
+find ./results/ -name "*min100.1.*"
+
+#only bless correct and assemble with platanus
+./demogenas -m assemble -t slurm -s "-pr --until ail_platanus" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos.abyss_corrected -i "-B $DATA -B $BINFL" --select="GspBarb,Gcern"
+
+./demogenas -m evaluate_assemblies -t serial --threads=4 --configfile=data/config.Monos.abyss_corrected -i "-B $DATA -B $BINFL" --select="Isubu,Gcern,GspBarb" -s "--until eva_busco -npr"
+
+######
+#only do until kmer-plot
+./demogenas -m eval_illumina -t slurm --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos -i "-B $DATA" -s "--until eva_plot_k_hist" --select="GthyLa,GthyKa,GthyPa"
+
+#run only minia on trimmed data
+./demogenas -m assemble -t slurm -s "-pr --until ail_minia" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos.assemble_trimmed -i "-B $DATA" --select="GthyLa,GthyKa,GthyPa,GsGobi,Dvist,GspBarb2"
+
+#run only until abyss after bless correction
+./demogenas -m assemble -t slurm -s "-pr --until ail_abyss" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos.abyss_corrected -i "-B $DATA" --select="GthyLa,GthyKa,GthyPa,GsGobi,Dvist,GspBarb2"
+
+./demogenas -m evaluate_assemblies -t serial --threads=4 --configfile=data/config.Monos.abyss_corrected -i "-B $DATA -B $BINFL" --select="Dvist" -s "--until eva_quast -pr"
+
+#assemble only abyss, both trimmed and bless corrected
+./demogenas -m assemble -t slurm -s "-npr --until ail_abyss" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos.assemble_trimmed_and_ec -i "-B $DATA" --select="Gluci_70"
+
+./demogenas -m eval_illumina -t slurm -s "-prn --until eva_plot_k_hist" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Monos.assemble_trimmed -i "-B $DATA" --select="Sphy_Ma21,Sphy_No21"
+
+./demogenas -m assemble -t serial --threads=30 --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Sylvia-genome -i "-B $DATA" --select="Pop49B_46" -s "-pr " --dry
+
+./demogenas -m trim_illumina -t serial --configfile=data/config.Gsalaris --dry --verbose --select="GsalDra"
+
+./demogenas -m evaluate_assemblies -t serial --threads=24 --configfile=data/config.Eubo -i "-B $DATA -B $BINFL" --select="EsKje_Sa_w" -s "--until eva_busco -pr"
+
+
+#find memory usage every 10 seconds
+do=1
+while [[ "$do" -eq 1 ]]
+do
+        sleep 30
+        echo -e "\n### $(date) ###\n"
+        #ps command gives rss and vmem in KB
+        echo -e "rss-vmem: $(ps -U $user --no-headers -o rss,vsz | awk '{rss+=$1; vmem+=$2} END{print rss" "vmem}')"
+        echo
+        top -b -n 1 | grep "hahnc"
+done > watch.memory.txt
+
+#get hash from command string:
+echo -n "--something 42 --config 42 --cov 21" | sed 's/-/|/g' | sed 's/||/|/g' | sed 's/ |/|/g' | tr '|' '\n' | sort | md5sum
+
+#in python:
+import hashlib
+my_string = "--coverage 25 --split --sensitive 2"
+hashlib.shake_256("|".join(sorted(my_string.replace("-","|").replace("||","|").replace(" ","").split("|"))).encode()).hexdigest(5)
+
+#remove IUPAC characters from fastq
+zcat EcStj.guppy.ratatosk.fastq.gz | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; @a=split("", $s); for ($i=0; $i<@a; $i++){if ($a[$i] !~ /[ACGT]/){@nuc = ("A","C","G","T"); $replace = $nuc[int(rand(4))]; $a[$i] = $replace}}; $str = join("", @a); print "$h\n$str\n$p$q"' | gzip > EcStj.guppy.ratatosk.noIUPAC.fastq.gz
+
+
+#serial
+./demogenas -m eval_illumina -t serial --configfile=data/config.Monos --verbose -s "-pr --until eva_plot_k_hist --jobs 80" --select="GteuSc"
+
+./demogenas -m assemble -t serial -s "-pr --until ail_minia --jobs 95" --configfile=data/config.Monos.assemble_trimmed_and_ec -i "-B $DATA" --select="Ptrac" --dry
+
+./demogenas -m prepare_assemblies -t serial -s "-pr" --configfile=data/config.Monos.assemble_trimmed_and_ec -i "-B $DATA" --select="Polys" --verbose
+
+./demogenas -m evaluate_assemblies -t serial -s "-pr --until eva_quast" --configfile=data/config.Monos.assemble_trimmed_and_ec -i "-B $DATA" --select="Polys" --verbose
+
+./demogenas -m evaluate_assemblies -t serial -s "-pr --until eva_busco" --configfile=data/config.Monos.assemble_trimmed_and_ec -i "-B $DATA" --select="Polys" --verbose --dry
