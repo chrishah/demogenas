@@ -41,7 +41,7 @@ assemble:
 #assembler: ["haslr"] #, "spades", "platanus"]
 
 evaluate_assemblies:
-   evaluator: ["quast", "busco"]
+   evaluator: ["quast", "busco", "blobtools"]
    minlength: 1000
    busco:
       set: "eukaryota_odb10"
@@ -60,13 +60,21 @@ threads:
    samtools: 4
    trimmomatic: 24
    kmc: 24
-   bless: 20
+   bless: 40
    spades_correct: 90
    mergepairs_usearch: 20
-   abyss: 90
-   minia: 10
+   kmergenie: 40
+   abyss: 92
+   minia: 90
    platanus: 90
    spades: 90
    quast: 4
-   busco: 10
+   busco: 40
+   bowtie2: 8
+   samtools: 8
+   samtools_index: 4
    guppy: 10
+max_mem_in_GB:
+   bless: 80
+   abyss: 750
+   platanus: 750
