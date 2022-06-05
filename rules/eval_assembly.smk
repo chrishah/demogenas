@@ -42,7 +42,7 @@ def gather_blobtools(wildcards):
 	lisout=[]
 	for l in glob.glob("results/"+wildcards.sample+"/assembly_evaluation/assemblies/*.min"+str(config["evaluate_assemblies"]["minlength"])+".fasta"):
 		print(l)
-		lisout.append("/".join(l.split("/")[:3])+"/blobtools/"+config["evaluate_assemblies"]["busco"]["set"]+"/"+".".join(l.split("/")[-1].split(".")[:-2])+".min"+str(config["evaluate_assemblies"]["minlength"])+".blobtools.done")
+		lisout.append("/".join(l.split("/")[:3])+"/blobtools/"+".".join(l.split("/")[-1].split(".")[:-2])+".min"+str(config["evaluate_assemblies"]["minlength"])+"/blobtools.done")
 	print(wildcards.sample,str(lisout))
 	return lisout
 
@@ -197,12 +197,36 @@ rule eva_gather_busco:
 
 rule eva_blobtools:
 	input:
-		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.indexing_durmvd.done"
+		index = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam.bai",
+		assembly = "results/{sample}/assembly_evaluation/assemblies/{combination}.fasta",
+		bam = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam"
 	output:
-		"results/{sample}/assembly_evaluation/blobtools/{combination}.blobtools.done"
+		"results/{sample}/assembly_evaluation/blobtools/{combination}/blobtools.done"
+	log:
+		log = "results/{sample}/logs/blobtools.{combination}.log.txt",
+	params:
+		wd = os.getcwd(),
+		outdir = "results/{sample}/assembly_evaluation/blobtools/{combination}",
+		taxrule = config["evaluate_assemblies"]["blobtools"]["taxrule"],
+		create_additional_params = config["evaluate_assemblies"]["blobtools"]["create_additional_parameters"],
+		view_additional_params = config["evaluate_assemblies"]["blobtools"]["view_additional_parameters"],
+		plot_additional_params = config["evaluate_assemblies"]["blobtools"]["plot_additional_parameters"],
+	singularity:
+		"docker://chrishah/blobtools:v1.1.1"
 	shell:
 		"""
-		touch {output}
+		cd {params.outdir}
+		## blobtools create -i {params.wd}/{input.assembly} -b {params.wd}/{input.bam} --nodes /binfl/lv71312/hahnc/DBS/nodes.dmp --names /binfl/lv71312/hahnc/DBS/names.dmp --hitsfile $hitsblast --hitsfile $hitsdiamond --taxrule {params.taxrule} -o {wildcards.sample}.{wildcards.combination}
+		echo -e "\\n## $(date)\\tCreating blobDB\\n" &> {params.wd}/{log}
+		blobtools create -i {params.wd}/{input.assembly} -b {params.wd}/{input.bam} --taxrule {params.taxrule} -o {wildcards.sample}.{wildcards.combination} &>> {params.wd}/{log}
+
+		echo -e "\\n## $(date)\\tViewing blobDB\\n" &>> {params.wd}/{log}
+		blobtools view -i {wildcards.sample}.{wildcards.combination}.blobDB.json --taxrule {params.taxrule} &>> {params.wd}/{log}
+
+		echo -e "\\n## $(date)\\tPlotting blobDB\\n" &>> {params.wd}/{log}
+		blobtools plot -i {wildcards.sample}.{wildcards.combination}.blobDB.json --taxrule {params.taxrule} &>> {params.wd}/{log}
+
+		touch {params.wd}/{output}
 		"""
 
 rule eva_gather_blobtools:
