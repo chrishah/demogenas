@@ -359,7 +359,7 @@ def find_samples_with_assemblies(all_samples):
 #			if "platanus" in config["assemble"]["assembler"]:
 #				lis.append("results/{sample}/assembly/{assinput}/platanus/auto/platanus.ok".format(sample=wildcards["sample"], assinput=input))
 #			if "spades" in config["assemble"]["assembler"]:
-#				for kmode in ['default', 'bestk']:
+#				for kmode in config["assemble"]["spades_kmode"]:
 #					lis.append("results/{sample}/assembly/{assinput}/spades/{kmode}/spades.ok".format(sample=wildcards["sample"], assinput=input, kmode=kmode))
 
 def gather_assemblies(wildcards):
@@ -382,11 +382,17 @@ def gather_assemblies(wildcards):
 					for merger in merge_list:
 						lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
 		if "spades" in config["assemble"]["assembler"]:
-			for kmode in ['default', 'bestk']:
+			for kmode in config["assemble"]["spades_kmode"]:
 				for trimmer in trim_list:
 					for corrector in correct_list:
 						for merger in merge_list:
 							lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode))
+		if "megahit" in config["assemble"]["assembler"]:
+			for trimmer in trim_list:
+				for corrector in correct_list:
+					for merger in merge_list:
+						lis.append("results/{sample}/assembly/megahit/{trimmer}-{corrector}-{merger}/auto/megahit.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+
 
 		#further assemblers that require fast5 data as input AND fastq reads for correction or alike
 		if wildcards.sample in df_fast5["sample"].tolist():

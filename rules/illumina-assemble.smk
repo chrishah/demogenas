@@ -48,7 +48,7 @@ rule ail_kmergenie:
 	singularity: "docker://reslp/kmergenie:1.7051"
 	threads: config["threads"]["kmergenie"]
 	resources:
-		mem_gb = 20
+		mem_gb=config["max_mem_in_GB"]["kmergenie"]
 	shadow: "minimal"
 	shell:
 		"""
@@ -64,7 +64,7 @@ rule ail_kmergenie:
 			#check if best k could be not be found
 			if [ "$(cat {log.stderr})" = "No best k found" ]
 			then
-				echo "\\nBest k could not be found - moving on" 1>> {log.stdout}
+				echo -e "\\n[ $(date) ]\\tBest k could not be found - moving on" 1>> {log.stdout}
 				echo "0" > {output.bestk}
 				echo "0" > {output.bestkcutoff}
 				mkdir -p {output.report}
@@ -143,7 +143,7 @@ rule ail_minia:
 #	shadow: "minimal"
 	threads: config["threads"]["minia"]
 	resources:
-		mem_gb=20
+		mem_gb=config["max_mem_in_GB"]["minia"]
 	shell:
 		"""
 		bestk=$(cat {input.bestk})
@@ -253,19 +253,27 @@ rule ail_spades:
 		defaultks = "21,33,55,77",
 		longks = "21,33,55,77,99,127",
 		kmode = "{kmode}",
-		optional = "--isolate", 
-		mode = "only-assembler" #could be careful, only-error-correction, only-assembler,
+		resume = config["assemble"]["spades_resume"],
+		optional = config["assemble"]["spades_additional_options"],
+		mode = "only-assembler", #could be careful, only-error-correction, only-assembler,
 	singularity:
 		"docker://reslp/spades:3.15.3"
 #	shadow: "minimal"
 	threads: config["threads"]["spades"]
 	resources:
-		mem_gb=750
+		mem_gb=config["max_mem_in_GB"]["spades"]
 	shell:
 		"""
-		echo -e "[$(date)]\\tHost: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
 		bestk=$(cat {input.bestk})
-		if [ $bestk -eq 0 ] && [ "{params.kmode}" == "bestk" ]
+		if [ "{params.resume}" == "yes" ] && [ -d {params.dir}/{params.sample} ]
+		then
+			echo -e "\\n[$(date)]\\tContinuing previous run" 1>> {log.stdout} 2> {log.stderr}
+			echo -e "[$(date)]\\tResuming SPAdes" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			cd {params.dir}
+			spades.py -o {params.sample} --restart-from last -m $(( {resources.mem_gb} - 5 )) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			touch spades.ok
+			exit 0
+		elif [ $bestk -eq 0 ] && [ "{params.kmode}" == "bestk" ]
 		then
 			echo -e "[$(date)]\\tNo optimal k found" 1> {log.stdout} 2> {log.stderr}
 			touch {output.ok}
@@ -294,7 +302,7 @@ rule ail_spades:
 		if [ ! -d {params.dir} ]
 		then
 			mkdir -p {params.dir}
-		else
+		else 
 			rm -rf {params.dir}/* 
 		fi
 
@@ -311,6 +319,37 @@ rule ail_spades:
 		-m $(( {resources.mem_gb} - 5 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
 		touch spades.ok
+		"""
+rule ail_megahit:
+	input:
+		reads = get_illumina_assembly_input,
+	output:
+		ok = "results/{sample}/assembly/megahit/{trimmer}-{corrector}-{merger}/auto/megahit.ok",
+	log:
+		stdout = "results/{sample}/logs/megahit.{trimmer}-{corrector}-{merger}.bestk.stdout.txt",
+		stderr = "results/{sample}/logs/megahit.{trimmer}-{corrector}-{merger}.bestk.stderr.txt"
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+		dir = "results/{sample}/assembly/megahit/{trimmer}-{corrector}-{merger}/auto",
+		optional = config["assemble"]["megahit_additional_options"],
+	singularity:
+		"docker://chrishah/megahit:v1.2.9-f8afe5d"
+	threads: config["threads"]["megahit"]
+	resources:
+		mem_gb=config["max_mem_in_GB"]["megahit"]
+	shell:
+		"""
+		cd {params.dir}
+
+		megahit \
+		-1 {params.wd}/{input.reads[0]} \
+		-2 {params.wd}/{input.reads[1]} \
+		-r {params.wd}/{input.reads[2]} \
+		-m $(( ( {resources.mem_gb} - 5 ) * 1073741824 )) -t $(( {threads} - 1 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) \
+		--out-prefix {params.sample} 1>> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+		
+		touch {params.wd}/{output.ok}
 		"""
 ### this woudl be for restarting
 #		if [ ! -d {params.dir} ]
@@ -336,7 +375,7 @@ rule ail_gather_illumina_assemblies:
                         trimmer=trim_list,
                         corrector=correct_list,
                         merger=merge_list,
-			kmode=["bestk","default"])
+			kmode=config["assemble"]["spades_kmode"])
 	output:
 		"results/{sample}/assembly/spades/spades.ok"
 	shell:

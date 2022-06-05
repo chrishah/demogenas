@@ -35,17 +35,20 @@ kmc:
 
 ### short read assembly
 assemble: 
-   assembler: ["abyss", "minia", "platanus", "spades", "haslr", "abyss_scaffold", "spades_hybrid", "flye", "canu"] 
+   assembler: ["abyss", "minia", "platanus", "spades", "megahit", "haslr", "abyss_scaffold", "spades_hybrid", "flye", "canu"] 
    assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
    default_k: [51]
-#assembler: ["haslr"] #, "spades", "platanus"]
+   spades_additional_options: #e.g. "--meta"
+   spades_kmode: ["default"] #["bestk","default"]   
+   spades_resume: "yes" #you have to say 'yes' to continue, everything else will start afresh
+   megahit_additional_options: 
 
 evaluate_assemblies:
    evaluator: ["quast", "busco", "blobtools"]
    minlength: 1000
    busco:
       set: "eukaryota_odb10"
-      augustus_species: "schistosoma"
+      augustus_species: "schistosoma" #if nothing is specified here metaeuk will beused within BUSCO
       additional_parameters: ""
 
 #ectools:
@@ -58,16 +61,16 @@ evaluate_assemblies:
 
 threads:
    samtools: 4
-   trimmomatic: 24
    kmc: 24
-   bless: 40
+   bless: 10
    spades_correct: 90
    mergepairs_usearch: 20
    kmergenie: 40
    abyss: 92
    minia: 90
    platanus: 90
-   spades: 90
+   spades: 80
+   megahit: 90
    quast: 4
    busco: 40
    bowtie2: 8
@@ -75,6 +78,10 @@ threads:
    samtools_index: 4
    guppy: 10
 max_mem_in_GB:
-   bless: 80
+   bless: 100
+   kmergenie: 50
+   minia: 50
    abyss: 750
    platanus: 750
+   spades: 2000
+   megahit: 2000
