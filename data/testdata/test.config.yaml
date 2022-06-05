@@ -50,6 +50,13 @@ evaluate_assemblies:
       set: "eukaryota_odb10"
       augustus_species: "schistosoma" #if nothing is specified here metaeuk will beused within BUSCO
       additional_parameters: ""
+   bowtie2:
+      additional_parameters: "--phred33 --fr --quiet --maxins 800"
+   blobtools:
+      taxrule: "bestsumorder"
+      create_additional_parameters: ""
+      view_additional_parameters: ""
+      plot_additional_parameters: ""
 
 #ectools:
 #   ec_concurrency: 100
