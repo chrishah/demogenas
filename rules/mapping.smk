@@ -47,7 +47,7 @@
 
 rule eva_bowtie2_index:
 	input:
-		assembly = gather_assemblies,
+		assembly = "results/{sample}/assembly_evaluation/assemblies/{combination}.fasta",
 #		assembly = get_assembly_path,
 	singularity:
 		"docker://reslp/bowtie2:2.3.5" 
@@ -74,13 +74,14 @@ rule eva_bowtie2_mapping:
 		sample = "{sample}",
 		assemblyID = "{combination}",
 		indir = "results/{sample}/assembly_evaluation/genome_index",
-		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}"
+		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}",
+		additional_params = config["evaluate_assemblies"]["bowtie2"]["additional_parameters"]
 	singularity:
 		"docker://reslp/bowtie2:2.3.5"
 	threads: config["threads"]["bowtie2"]
 	shell:
 		"""
-		bowtie2 -1 {input.forward_reads} -2 {input.reverse_reads} -p {threads} -q --phred33 --fr -x {params.indir}/{params.assemblyID}.index -S {params.outdir}/{params.sample}.sam --quiet 
+		bowtie2 -1 {input.forward_reads} -2 {input.reverse_reads} -p {threads} -q -x {params.indir}/{params.assemblyID}.index -S {params.outdir}/{params.sample}.sam {params.additional_params} 
 		touch {output}
 		"""
 
@@ -108,7 +109,8 @@ rule eva_remove_duplicates:
 	input:
 		rules.eva_conversion_samtools.output
 	output:
-		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.duprmvd.done"
+		bam = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam",
+		done = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.duprmvd.done"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
@@ -122,32 +124,34 @@ rule eva_remove_duplicates:
 		java -jar /usr/picard/picard.jar MarkDuplicates \
 		INPUT={params.sample}.bam OUTPUT={params.sample}.sorted.duprmvd.bam \
 		METRICS_FILE={params.sample}.sorted.duprmvd.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true VALIDATION_STRINGENCY=LENIENT MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000
-		touch {params.wd}/{output}
+		rm {params.sample}.bam
+		touch {params.wd}/{output.done}
 		"""
 
-rule eva_calculate_depth:
-	input:
-		rules.eva_remove_duplicates.output
-	output:
-		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.calculate_depth.done"
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}"
-	singularity:
-		"docker://reslp/samtools:1.9"
-	threads: 1
-	shell:
-		"""
-		samtools depth {params.outdir}/{params.sample}.sorted.duprmvd.bam | cut -f 3 | sort -n | uniq -c > {params.outdir}/{params.sample}.depth.hist.txt
-		touch {output}
-		"""
+#rule eva_calculate_depth:
+#	input:
+#		rules.eva_remove_duplicates.output
+#	output:
+#		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.calculate_depth.done"
+#	params:
+#		wd = os.getcwd(),
+#		sample = "{sample}",
+#		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}"
+#	singularity:
+#		"docker://reslp/samtools:1.9"
+#	threads: 1
+#	shell:
+#		"""
+#		samtools depth {params.outdir}/{params.sample}.sorted.duprmvd.bam | cut -f 3 | sort -n | uniq -c > {params.outdir}/{params.sample}.depth.hist.txt
+#		touch {output}
+#		"""
 
 rule eva_index_duprmvd:
 	input:
 		rules.eva_remove_duplicates.output
 	output:
-		"results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.indexing_durmvd.done"
+		bai = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam.bai",
+		done = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.indexing_durmvd.done"
 	params:
 		sample = "{sample}",
 		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}"
