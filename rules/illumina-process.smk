@@ -193,7 +193,7 @@ rule eva_kmc:
 #		suf = "results/{sample}/kmc/{sample}.k{k}.kmc_suf",
 		hist = "results/{sample}/kmc/{sample}.k{k}.histogram.txt",
 		genomescope = "results/{sample}/kmc/{sample}.k{k}.histogram.genomescope.txt"
-	shadow: "shallow"
+	shadow: "minimal"
 	shell:
 		"""
 		echo -e "$(date)\tStarting kmc"
