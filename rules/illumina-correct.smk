@@ -61,6 +61,8 @@ rule cor_bless_pe:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
 		bless_runs = expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
+	wildcard_constraints:
+		trimmer="trimgalore.*",
 	output:
 		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-pe.done",
 		forward = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.1.fastq.gz",
@@ -97,6 +99,8 @@ rule cor_bless_se:
 	input:
 		orphans = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz",
 		bless_runs = expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
+	wildcard_constraints:
+		trimmer="trimgalore.*",
 	output:
 		orphans = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.se.fastq.gz",
 		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-se.done"
@@ -133,6 +137,8 @@ rule cor_correct_spades:
 		forward = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.1.fastq.gz",
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
 		orphans = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz",
+	wildcard_constraints:
+		trimmer="trimgalore.*",
 	output:
 		forward = "results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.1.fastq.gz",
 		reverse = "results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.2.fastq.gz",
@@ -173,6 +179,8 @@ rule cor_correct_spades:
 rule cor_gather_illumina_corrected:
 	input:
 		control_illumina_ec
+	wildcard_constraints:
+		trimmer="trimgalore.*",
 	output:
 		ok = "results/{sample}/errorcorrection/illumina-correction-{trimmer}.ok",
 	threads: 1

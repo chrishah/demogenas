@@ -1,5 +1,5 @@
 wildcard_constraints:
-	trimmer="trimgalore.*",
+	trimmer="None|trimgalore.*",
 	corrector="bless|spades|None",
 	merger="usearch|None",
 	basecaller="guppy|flappie",
