@@ -17,8 +17,6 @@ else:
 	else:
 		correct_list = ["None"]
 
-#trimmed data is the minimum so this list is always completed
-trim_list = list(config["illumina_trimming"])
 #if trimmed is selected, None needs to be added to corrected and merged so we get a trimmed-None-None return
 if "trimmed" in config["assemble"]["assemble_at_stage"]:
 	if not "None" in merge_list:
@@ -91,6 +89,7 @@ rule ail_abyss:
 	log:
 		stdout = "results/{sample}/logs/abyss.{trimmer}-{corrector}-{merger}.bestk.stdout.txt",
 		stderr = "results/{sample}/logs/abyss.{trimmer}-{corrector}-{merger}.bestk.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/abyss.{trimmer}-{corrector}-{merger}.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
@@ -171,25 +170,27 @@ rule ail_minia:
 		"""
 #		-in {params.wd}/{input.merged} \
 
-rule ail_platanus:
+rule ail_platanus_assemble:
 	input:
 		reads = get_illumina_assembly_input,
 	output:
-		ok = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok"
+		ok = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.assemble.ok"
 	log:
-		stdout = "results/{sample}/logs/platanus.{trimmer}-{corrector}-{merger}.stdout.txt",
-		stderr = "results/{sample}/logs/platanus.{trimmer}-{corrector}-{merger}.stderr.txt"
+		stdout = "results/{sample}/logs/platanus.assemble.{trimmer}-{corrector}-{merger}.stdout.txt",
+		stderr = "results/{sample}/logs/platanus.assemble.{trimmer}-{corrector}-{merger}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/platanus.assemble.{trimmer}-{corrector}-{merger}.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
 		dir = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto",
-		min = 100
+		min = 100,
+		tmp = "."
 	singularity:
 		"docker://chrishah/platanus:v1.2.4"
 #	shadow: "minimal"
-	threads: config["threads"]["platanus"]
+	threads: config["threads"]["platanus_assemble"]
 	resources:
-		mem_gb=config["max_mem_in_GB"]["platanus"]
+		mem_gb=config["max_mem_in_GB"]["platanus_assemble"]
 	shell:
 		"""
 		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}
@@ -206,8 +207,36 @@ rule ail_platanus:
 		-o {params.sample} \
 		-f <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) <(zcat {params.wd}/{input.reads[2]}) \
 		-t {threads} \
-		-m {resources.mem_gb} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		-m {resources.mem_gb} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
+		touch {params.wd}/{output}
+		"""
+
+rule ail_platanus_scaffold:
+	input:
+		reads = get_illumina_assembly_input,
+		assemble = rules.ail_platanus_assemble.output
+	output:
+		ok = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.scaffold.ok"
+	log:
+		stdout = "results/{sample}/logs/platanus.scaffold.{trimmer}-{corrector}-{merger}.stdout.txt",
+		stderr = "results/{sample}/logs/platanus.scaffold.{trimmer}-{corrector}-{merger}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/platanus.scaffold.{trimmer}-{corrector}-{merger}.txt"
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+		dir = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto",
+		min = 100,
+		tmp = "."
+	singularity:
+		"docker://chrishah/platanus:v1.2.4"
+#	shadow: "minimal"
+	threads: config["threads"]["platanus_scaffold"]
+	resources:
+		mem_gb=config["max_mem_in_GB"]["platanus_scaffold"]
+	shell:
+		"""
+		cd {params.dir}
 		#filtering paired end reads by length (minimum 100)
 		echo -e "\n$(date)\tFiltering paired end reads by length (mininum {params.min} bp) before scaffolding" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 		paste <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; chomp $p; chomp $q; @s=split("\\t",$s); if ((length($s[0]) >= {params.min}) && (length($s[1]) >= {params.min})){{@h=split("\\t",$h); $h[0] =~ s/^@/>/g; $h[1] =~ s/^@/>/g; @q=split("\\t",$q); print STDOUT "$h[0]\\n$s[0]\\n"; print STDERR "$h[1]\\n$s[1]\\n";}}' 1> {wildcards.sample}.min{params.min}.1.fasta 2> {wildcards.sample}.min{params.min}.2.fasta
@@ -218,19 +247,47 @@ rule ail_platanus:
 		-c {params.sample}_contig.fa \
 		-b {params.sample}_contigBubble.fa \
 		-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
-		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		-t {threads} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 #		-IP1 temp.f1.fasta temp.f2.fasta \
 
+		touch {params.wd}/{output}
+		"""
+
+rule ail_platanus_gapclose:
+	input:
+		reads = get_illumina_assembly_input,
+		scaffold = rules.ail_platanus_scaffold.output
+	output:
+		ok = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.gapclose.ok"
+	log:
+		stdout = "results/{sample}/logs/platanus.gapclose.{trimmer}-{corrector}-{merger}.stdout.txt",
+		stderr = "results/{sample}/logs/platanus.gapclose.{trimmer}-{corrector}-{merger}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/platanus.gapclose.{trimmer}-{corrector}-{merger}.txt"
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+		dir = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto",
+		min = 100,
+		tmp = "."
+	singularity:
+		"docker://chrishah/platanus:v1.2.4"
+#	shadow: "minimal"
+	threads: config["threads"]["platanus_gapclose"]
+	resources:
+		mem_gb=config["max_mem_in_GB"]["platanus_gapclose"]
+	shell:
+		"""
+		cd {params.dir}
 		echo -e "\n$(date)\tRunning platanus gap close" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 		platanus gap_close \
 		-o {params.sample} \
 		-c {params.sample}_scaffold.fa \
 		-f <(zcat {params.wd}/{input.reads[2]}) \
 		-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
-		-t {threads} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		-t {threads} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
 
 		rm {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta
-		touch platanus.ok
+		touch {params.wd}/{output}
 		"""
 		#filtering paired end reads by length (minimum 100)
 #		paste <(zcat {params.wd}/{input.f}) <(zcat {params.wd}/{input.r}) | perl -ne 'chomp; $h=$_; $s=<>; chomp $s; $p=<>; $q=<>; chomp $p; chomp $q; @s=split("\\t",$s); if ((length($s[0]) >= {params.min}) && (length($s[1]) >= {params.min})){{@h=split("\\t",$h); $h[0] =~ s/^@/>/g; $h[1] =~ s/^@/>/g; @q=split("\\t",$q); print STDOUT "$h[0]\\n$s[0]\\n"; print STDERR "$h[1]\\n$s[1]\\n";}}' 1> temp.f1.fasta 2> temp.f2.fasta
