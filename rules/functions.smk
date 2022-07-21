@@ -3,6 +3,20 @@ import os
 import glob
 from sys import exit
 
+#trimmed data is the minimum so this list is always completed
+trim_list = list(config["illumina_trimming"])
+#print("TRIMLIST: "+str(trim_list))
+if config["kmer_filtering"]["assemble"] == "yes":
+	trimmers = trim_list.copy()
+	for trimmer in config["illumina_trimming"]:
+		for k in config["kmer_filtering"]["k"]:
+			for mc in config["kmer_filtering"]["mincov"]:
+				for mp in config["kmer_filtering"]["minprop"]:
+					trimmers.append("%s.k%s.%s.%s" %(trimmer, str(k), str(mc), str(mp)))
+	trim_list = list(trimmers)
+	print("List of trimmers: "+str(trim_list))
+					
+
 
 ######  reading and filtering sample data ######
 ### read in data, set index to lib
@@ -42,7 +56,6 @@ Illumina_process_df = df[df["lib"].isin(df_fastq["lib"].tolist()+df_bam["lib"].t
 
 
 
-
 #fill dictionary
 dic = {'sample': [], 'lib': []}
 unitdict = {}
@@ -60,6 +73,7 @@ units = pd.DataFrame(dic).set_index(['sample','lib'], drop=False)
 print(str(units))
 units.index = units.index.set_levels(
     [i.astype(str) for i in units.index.levels])  # enforce str in index
+
 
 #def get_sample_for_lib(wildcards):
 #	return pd.read_csv(config["samples"], dtype=str, sep="\t").set_index(["lib"], drop=False).loc[(wildcards.lib), ["sample"]].dropna()
@@ -314,6 +328,8 @@ def find_new_assemblies(wildcards):
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/minia/*/bestk/*[0-9].contigs.fa"))
 		if ass == "platanus":
 			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/platanus/*/auto/*_gapClosed.fa"))
+		if ass == "flye":
+			lis.extend(glob.glob("results/"+wildcards.sample+"/assembly/flye/*/*/Lmino/assembly.fasta"))
 	print("ALL ASSEMBLIES FOUND: "+str(lis))
 	for i in reversed(range(len(lis))):
 		prefix="-".join(lis[i].split("/")[3:6])
@@ -380,7 +396,7 @@ def gather_assemblies(wildcards):
 			for trimmer in trim_list:
 				for corrector in correct_list:
 					for merger in merge_list:
-						lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
+						lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.gapclose.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
 		if "spades" in config["assemble"]["assembler"]:
 			for kmode in config["assemble"]["spades_kmode"]:
 				for trimmer in trim_list:
