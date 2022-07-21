@@ -26,11 +26,11 @@ rule pre_sort_bam:
 	threads: config["threads"]["samtools"]
 	singularity: "docker://reslp/samtools:1.11"
 	resources:
-		mem_gb = 4
+		mem_gb = config["threads"]["samtools"]
 	shadow: "minimal"
 	shell:
 		"""
-		samtools sort -@ $(( {threads} - 1 )) -m $(( {resources.mem_gb} / {threads} ))G -n {input} -o {params.sample}.{params.lib}.sorted.bam 1> {log.stdout} 2> {log.stderr}
+		samtools sort -@ $(( {threads} - 1 )) -m 1G -n {input} -o {params.sample}.{params.lib}.sorted.bam 1> {log.stdout} 2> {log.stderr}
 		mv *.bam {params.wd}/{params.targetdir}
 		touch {output.ok}
 		"""
@@ -96,6 +96,37 @@ rule tri_trimgalore:
 		touch {output.ok}
 
 		"""
+rule tri_gather_short_trimmed_by_lib:
+	input:
+		forward = input_for_clean_trim_fp,
+		reverse = input_for_clean_trim_rp,
+		forward_orphans = input_for_clean_trim_fo,
+		reverse_orphans = input_for_clean_trim_ro
+	params:
+		wd = os.getcwd(),
+		sample = "{sample}",
+	singularity:
+		"docker://chrishah/trim_galore:0.6.0"
+	output:
+		ok = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.cat.status.ok",
+		f_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.1.fastq.gz",
+		r_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.2.fastq.gz",
+		orphans = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.se.fastq.gz",
+	shadow: "minimal"
+	threads: 2
+	shell:
+		"""
+		if [ $(echo {input.forward} | wc -w) -gt 1 ]
+		then
+			cat {input.forward} > {output.f_trimmed}
+			cat {input.reverse} > {output.r_trimmed}
+		else
+			ln -s ../../../../../{input.forward} {output.f_trimmed}
+			ln -s ../../../../../{input.reverse} {output.r_trimmed}
+		fi
+		cat {input.forward_orphans} {input.reverse_orphans} > {output.orphans}
+		touch {output.ok}
+		"""
 
 rule eva_fastqc_raw:
 	input:
@@ -149,7 +180,7 @@ rule eva_fastqc_trimmed:
 		"""
 rule eva_stats:
 	input:
-		lambda wildcards: expand(rules.eva_fastqc_trimmed.output.ok, sample=wildcards.sample, lib=unitdict[wildcards.sample])
+		lambda wildcards: expand(rules.eva_fastqc_trimmed.output.ok, sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist())))
 	singularity:
 		"docker://chrishah/r-docker:latest"
 	log:
@@ -170,10 +201,10 @@ rule eva_stats:
 		"""
 rule eva_kmc:
 	input:
-		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
 	params:
 		sample = "{sample}",
 		k = "{k}",
@@ -204,6 +235,222 @@ rule eva_kmc:
 		kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
 		cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
 		"""
+
+rule fil_kmc_create_db:
+	input:
+		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+	params:
+		sample = "{sample}",
+		k = "{filter_k}",
+		max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+		mincount = config["kmc"]["mincount"],
+		maxcount = config["kmc"]["maxcount"],
+		maxcounter = config["kmc"]["maxcounter"],
+		nbin = 64,
+	threads: config["threads"]["kmc"]
+	singularity:
+		"docker://chrishah/kmc3-docker:v3.0"
+	log:
+		stdout = "results/{sample}/logs/kmc_db.{sample}.k{filter_k}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_db.{sample}.k{filter_k}.stderr.txt"
+	output: 
+		db = directory("results/{sample}/kmc/filtered/{sample}.k{filter_k}.kmers"),
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting kmc"
+		echo "{input}" | sed 's/ /\\n/g' > fastqs.txt
+		mkdir -p {output}/db
+		kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {output}/{params.sample} {output}/db 1>> {log.stdout} 2>> {log.stderr}
+		"""
+
+rule fil_kmc_filter_forw:
+	input:
+		db = rules.fil_kmc_create_db.output,
+		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+#		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+#		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+#		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+	params:
+		sample = "{sample}",
+		k = "{filter_k}",
+		max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+		mincov = "{mincov}",
+		minprop = "{minprop}",
+		maxcount = config["kmc"]["maxcount"],
+		maxcounter = config["kmc"]["maxcounter"],
+		nbin = 64,
+	threads: config["threads"]["kmc"]
+	singularity:
+		"docker://chrishah/kmc3-docker:v3.0"
+	log:
+		stdout = "results/{sample}/logs/kmc_filter.{sample}.k{filter_k}-{mincov}-{minprop}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_filter.{sample}.k{filter_k}-{mincov}-{minprop}.stderr.txt"
+	output: 
+		filtered = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.forw.fastq",
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting kmc filtering"
+		echo "{input}" | sed 's/ /\\n/g' | tail -n +2 | sort > fastqs.txt
+		kmc_tools filter {input.db}/{wildcards.sample} -ci{params.mincov} @fastqs.txt -ci{params.minprop} {output.filtered} 1>> {log.stdout} 2>> {log.stderr}
+		"""
+rule fil_kmc_filter_reve:
+	input:
+		db = rules.fil_kmc_create_db.output,
+		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+	params:
+		sample = "{sample}",
+		k = "{filter_k}",
+		max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+		mincov = "{mincov}",
+		minprop = "{minprop}",
+		maxcount = config["kmc"]["maxcount"],
+		maxcounter = config["kmc"]["maxcounter"],
+		nbin = 64,
+	threads: config["threads"]["kmc"]
+	singularity:
+		"docker://chrishah/kmc3-docker:v3.0"
+	log:
+		stdout = "results/{sample}/logs/kmc_filter.{sample}.k{filter_k}-{mincov}-{minprop}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_filter.{sample}.k{filter_k}-{mincov}-{minprop}.stderr.txt"
+	output: 
+		filtered = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.reve.fastq",
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting kmc filtering"
+		echo "{input}" | sed 's/ /\\n/g' | tail -n +2 | sort > fastqs.txt
+		kmc_tools filter {input.db}/{wildcards.sample} -ci{params.mincov} @fastqs.txt -ci{params.minprop} {output.filtered} 1>> {log.stdout} 2>> {log.stderr}
+		"""
+
+rule fil_repair_sort:
+	input:
+		forw = rules.fil_kmc_filter_forw.output,
+		reve = rules.fil_kmc_filter_reve.output
+	threads: 1
+	singularity:
+		"docker://reslp/samtools:1.9"
+	log:
+		"results/{sample}/logs/kmc_sort.{sample}.k{filter_k}-{mincov}-{minprop}.log.txt",
+	output:
+		bam = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.sorted.bam"
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting sort" &> {log}
+		cat {input.forw} {input.reve} | perl -ne 'chomp; $h=$_; $s=<>; $p=<>; $q=<>; chomp $s; chomp $q; if (($h =~ / 1/) || ($h =~ /\/1$/)){{$flag=68}}else{{$flag=132}}; ($h,$e)=split(" ", $h); print substr($h, 1)."\\t$flag\\t*\\t0\\t0\\t*\\t*\\t0\\t0\\t$s\\t$q\\tRG:Z:$e\\n"' | samtools view -bS | samtools sort -n -@ {threads} 1> {output.bam} 2>> {log}
+		"""
+
+rule fil_repair_extract_pe:
+	input:
+		bam = rules.fil_repair_sort.output,
+		forw = rules.fil_kmc_filter_forw.output,
+		reve = rules.fil_kmc_filter_reve.output
+	threads: 1
+	singularity:
+		"docker://reslp/samtools:1.9"
+	log:
+		stdout = "results/{sample}/logs/kmc_extract-pe.{sample}.k{filter_k}-{mincov}-{minprop}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_extract-pe.{sample}.k{filter_k}-{mincov}-{minprop}.stderr.txt"
+	output:
+		forw = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/0000.k{filter_k}.{mincov}.{minprop}.1.fastq",
+		reve = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/0000.k{filter_k}.{mincov}.{minprop}.2.fastq",
+		singletons = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.singletons.txt",
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting extract pe" 1> {log.stdout} 2> {log.stderr}
+
+		samtools view {input.bam} | perl -ne 'chomp; push(@a, $_); if (scalar @a == 2){{@1 = split("\\t", $a[0]); @2 = split("\\t", $a[1]); if ($1[0] eq $2[0]){{$1[11] =~ s/RG:Z://; $2[11] =~ s/RG:Z://; $1[0] = "$1[0] $1[11]"; $2[0] = "$2[0] $2[11]"; print STDOUT "\@$1[0]\\n$1[9]\\n+\\n$1[10]\\n"; print STDOUT "\@$2[0]\\n$2[9]\\n+\\n$2[10]\\n"; @a=()}}else{{$singleton = shift @a; @line = split("\\t", $singleton); $line[11] =~ s/RG:Z://; $line[0] = "$line[0] $line[11]"; print STDERR "$line[0]\\n"}}}}' 1> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0000.interleaved.fastq 2> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.singletons.txt
+		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0000.interleaved.fastq | perl -ne '$h1=$_; $s1=<>; $p1=<>; $q1=<>; $h2=<>; $s2=<>; $p2=<>; $q2=<>; print STDOUT "$h1$s1$p1$q1"; print STDERR "$h2$s2$p2$q2"' 1> {output.forw} 2> {output.reve}
+
+		rm {input.forw} {input.reve} {input.bam}
+		"""
+
+rule fil_repair_extract_se:
+	input:
+		singletons = rules.fil_repair_extract_pe.output.singletons,
+		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+	threads: 1
+	singularity:
+		"docker://chrishah/mira:v4.9.6"
+	log:
+		stdout = "results/{sample}/logs/kmc_extract-se.{sample}.k{filter_k}-{mincov}-{minprop}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_extract-se.{sample}.k{filter_k}-{mincov}-{minprop}.stderr.txt"
+	output:
+		forw = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.1.fastq.gz",
+		reve = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.2.fastq.gz",
+	resources:
+		mem_gb=config["max_mem_in_GB"]["miraconvert"]
+#	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting extract pe" 1> {log.stdout}
+		cat {input.singletons} | perl -ne 'chomp; $forw = $_; $reve = $_; if ($_ =~ / 1/){{$reve =~ s/ 1/ 2/;}}else{{$forw =~ s/ 2/ 1/;}} print STDOUT "$forw\\n"; print STDERR "$reve\\n"' 1> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt 2> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt
+		i=0001
+		for f in $(echo "{input.f_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.1"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2> {log.stderr}
+		for f in $(echo "{input.r_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.2"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2> {log.stderr}
+		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.1.fastq > results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.1.fastq
+		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.2.fastq > results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.2.fastq
+		rm results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.fastq results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.?.list.txt
+
+		gzip -v results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.?.fastq 1>> {log.stdout} 2> {log.stderr}
+		
+		rm {input.singletons}
+		"""
+
+rule fil_kmc_filtered:
+	input:
+		reads = rules.fil_repair_extract_se.output
+	params:
+		sample = "{sample}",
+		k = "{filter_k}",
+		max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+		mincount = config["kmc"]["mincount"],
+		maxcount = config["kmc"]["maxcount"],
+		maxcounter = config["kmc"]["maxcounter"],
+		nbin = 64,
+	threads: config["threads"]["kmc"]
+	singularity:
+		"docker://chrishah/kmc3-docker:v3.0"
+	log:
+		stdout = "results/{sample}/logs/kmc_filtered.{sample}.k{filter_k}-{mincov}-{minprop}.stdout.txt",
+		stderr = "results/{sample}/logs/kmc_filtered.{sample}.k{filter_k}-{mincov}-{minprop}.stderr.txt"
+	output: 
+		hist = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.histogram.txt",
+		genomescope = "results/{sample}/kmc/filtered/{filter_k}-{mincov}-{minprop}/{sample}.k{filter_k}.{mincov}.{minprop}.filtered.histogram.genomescope.txt"
+	shadow: "minimal"
+	shell:
+		"""
+		echo -e "$(date)\tStarting kmc"
+		echo "{input}" | sed 's/ /\\n/g' > fastqs.txt
+		mkdir {params.sample}.db
+		kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
+		kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
+		cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
+		"""
+
+if config["kmer_filtering"]["assemble"] == "yes":
+	rule fil_link_kmerfiltered:
+		input:
+			forw = rules.fil_repair_extract_se.output.forw,
+			reve = rules.fil_repair_extract_se.output.reve,
+			orphans = rules.tri_gather_short_trimmed_by_lib.output.orphans
+		output:
+			forw = "results/{sample}/trimming/trimgalore.k{filter_k}.{mincov}.{minprop}/{sample}-full/{sample}.trimgalore.k{filter_k}.{mincov}.{minprop}.1.fastq.gz",
+			reve = "results/{sample}/trimming/trimgalore.k{filter_k}.{mincov}.{minprop}/{sample}-full/{sample}.trimgalore.k{filter_k}.{mincov}.{minprop}.2.fastq.gz",
+			orphans = "results/{sample}/trimming/trimgalore.k{filter_k}.{mincov}.{minprop}/{sample}-full/{sample}.trimgalore.k{filter_k}.{mincov}.{minprop}.se.fastq.gz",
+		shell:
+			"""
+			ln -s ../../../../../{input.forw} {output.forw}
+			ln -s ../../../../../{input.reve} {output.reve}
+			zcat {input.orphans} | head -n 4 | gzip > {output.orphans}
+			"""
 
 rule reformat_read_headers:
 	input:
@@ -254,43 +501,12 @@ rule eva_plot_k_hist:
 		cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
 		"""
 
-rule tri_gather_short_trimmed_by_lib:
-	input:
-		forward = input_for_clean_trim_fp,
-		reverse = input_for_clean_trim_rp,
-		forward_orphans = input_for_clean_trim_fo,
-		reverse_orphans = input_for_clean_trim_ro
-	params:
-		wd = os.getcwd(),
-		sample = "{sample}",
-	singularity:
-		"docker://chrishah/trim_galore:0.6.0"
-	output:
-		ok = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.cat.status.ok",
-		f_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.1.fastq.gz",
-		r_trimmed = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.2.fastq.gz",
-		orphans = "results/{sample}/trimming/trimgalore/{sample}-full/{sample}.trimgalore.se.fastq.gz",
-	shadow: "minimal"
-	threads: 2
-	shell:
-		"""
-		if [ $(echo {input.forward} | wc -w) -gt 1 ]
-		then
-			cat {input.forward} > {output.f_trimmed}
-			cat {input.reverse} > {output.r_trimmed}
-		else
-			ln -s ../../../../../{input.forward} {output.f_trimmed}
-			ln -s ../../../../../{input.reverse} {output.r_trimmed}
-		fi
-		cat {input.forward_orphans} {input.reverse_orphans} > {output.orphans}
-		touch {output.ok}
-		"""
 
 rule clean_corrected_libs:
 	input:
-		forward = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.1.corrected.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		reverse = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.2.corrected.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		orphans = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.se.corrected.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		forward = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.1.corrected.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		reverse = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.2.corrected.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		orphans = lambda wildcards: expand("results/{{sample}}/errorcorrection/bless/{lib}/{{sample}}.{lib}.se.corrected.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
@@ -319,9 +535,9 @@ rule clean_corrected_libs:
 
 rule clean_merged_libs:
 	input:
-		merged = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}.merged.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		forward = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}_1.nm.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
-		reverse = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}_2.nm.fastq.gz", sample=wildcards.sample, lib=unitdict[wildcards.sample]),
+		merged = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}.merged.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		forward = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}_1.nm.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		reverse = lambda wildcards: expand("results/{{sample}}/readmerging/usearch/{lib}/{{sample}}.{lib}_2.nm.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
