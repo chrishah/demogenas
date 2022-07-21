@@ -3,6 +3,12 @@ samples: "data/testdata/test.data.tsv"
 ### short read trimming
 illumina_trimming: ["trimgalore"]
 
+kmer_filtering:
+   k: [21]
+   minprop: [0.5, 0.6, 0.7]
+   mincov: [22]
+   assemble: "" #Needs to be 'yes' so that the kmer filtered reads are also subject to error correction, merging and assembly
+
 ### short read error correction
 illumina_correction: ["bless", "spades"]
 
@@ -42,6 +48,7 @@ assemble:
    spades_kmode: ["default"] #["bestk","default"]   
    spades_resume: "yes" #you have to say 'yes' to continue, everything else will start afresh
    megahit_additional_options: 
+   flye_additional_options: ""
 
 evaluate_assemblies:
    evaluator: ["quast", "busco", "blobtools"]
@@ -67,17 +74,20 @@ evaluate_assemblies:
 #   minlength_out: 900
 
 threads:
-   samtools: 4
    kmc: 24
    bless: 10
    spades_correct: 90
+   ratatosk: 20
    mergepairs_usearch: 20
    kmergenie: 40
    abyss: 92
    minia: 90
-   platanus: 90
+   platanus_assemble: 100
+   platanus_scaffold: 40
+   platanus_gapclose: 40
    spades: 80
    megahit: 90
+   flye: 40
    quast: 4
    busco: 40
    bowtie2: 8
@@ -85,10 +95,15 @@ threads:
    samtools_index: 4
    guppy: 10
 max_mem_in_GB:
+   miraconvert: 20
    bless: 100
+   ratatosk: 100
    kmergenie: 50
    minia: 50
    abyss: 750
-   platanus: 750
+   platanus_assemble: 1900
+   platanus_scaffold: 300
+   platanus_gapclose: 300
    spades: 2000
    megahit: 2000
+   flye: 300
