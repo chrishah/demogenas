@@ -87,9 +87,10 @@ rule cor_bless_pe:
 		if [[ ! -d {params.dir}/bless-kbest-corrected ]]; then mkdir -p {params.dir}/bless-kbest-corrected; else rm -rf {params.dir}/bless-kbest-corrected/bless-k$bestk-pe*; fi
 		#run bless
 		bless -read1 {input.forward} -read2 {input.reverse} -kmerlength $bestk -max_mem {resources.mem_gb} -load {params.dir}/bless-k$bestk/bless-k$bestk -notrim -smpthread {threads} -gzip -prefix {params.dir}/bless-kbest-corrected/bless-k$bestk-pe 2>&1 | tee {log}
-
-		ln -s {params.wd}/{params.dir}/bless-kbest-corrected/bless-k$bestk-pe.1.corrected.fastq.gz {output.forward}
-		ln -s {params.wd}/{params.dir}/bless-kbest-corrected/bless-k$bestk-pe.2.corrected.fastq.gz {output.reverse}
+		cd {params.dir}/bless-kbest-corrected/
+		ln -s bless-k$bestk-pe.1.corrected.fastq.gz $(basename {output.forward})
+		ln -s bless-k$bestk-pe.2.corrected.fastq.gz $(basename {output.reverse})
+		cd {params.wd}
 		touch {output.ok}
 		"""
 rule cor_bless_se:
