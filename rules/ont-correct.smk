@@ -19,9 +19,9 @@ rule cor_ratatosk:
 #		options = "--trim-split 20",
 	singularity: "docker://chrishah/ratatosk:0.4-kdefault"
 	shadow: "minimal"
-	threads: 90
+	threads: config["threads"]["ratatosk"]
 	resources:
-		mem_gb=750
+		mem_gb=config["max_mem_in_GB"]["ratatosk"]
 	shell:
 		"""
 		#get all raw long reads (even if concurrency setting doesn't reflect the real number)
