@@ -1,9 +1,11 @@
 wildcard_constraints:
-	trimmer="trimgalore|None",
+	trimmer="trimgalore.*",
 	corrector="bless|spades|None",
 	merger="usearch|None",
 	basecaller="guppy|flappie",
-	longcorrection="canucorrect|consent|ratatosk"
+	longcorrection="canucorrect|consent|ratatosk",
+	filter_k="\d+",
+	mincov="\d+"
 
 #configfile from script
 
@@ -50,6 +52,14 @@ rule illumina_trim:
 	input:
 		#trim and gather
 		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
+
+rule kmer_filter:
+	input:
+#		expand(rules.fil_kmc_filter_forw.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"]),
+#		expand(rules.fil_kmc_filter_reve.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"]),
+#		expand(rules.fil_repair_extract_pe.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"]),
+#		expand(rules.fil_repair_extract_se.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"]),
+		expand(rules.fil_kmc_filtered.output, sample=Illumina_process_df["sample"], filter_k=config["kmer_filtering"]["k"], minprop=config["kmer_filtering"]["minprop"], mincov=config["kmer_filtering"]["mincov"])
 
 rule correct_illumina:
 	input:
