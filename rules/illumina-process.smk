@@ -390,7 +390,7 @@ rule fil_repair_extract_se:
 #	shadow: "minimal"
 	shell:
 		"""
-		echo -e "$(date)\tStarting extract pe" 1> {log.stdout}
+		echo -e "$(date)\tStarting extract se" 1> {log.stdout}
 		cat {input.singletons} | perl -ne 'chomp; $forw = $_; $reve = $_; if ($_ =~ / 1/){{$reve =~ s/ 1/ 2/;}}else{{$forw =~ s/ 2/ 1/;}} print STDOUT "$forw\\n"; print STDERR "$reve\\n"' 1> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt 2> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt
 		i=0001
 		for f in $(echo "{input.f_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.1"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2> {log.stderr}
@@ -449,7 +449,7 @@ if config["kmer_filtering"]["assemble"] == "yes":
 			"""
 			ln -s ../../../../../{input.forw} {output.forw}
 			ln -s ../../../../../{input.reve} {output.reve}
-			zcat {input.orphans} | head -n 4 | gzip > {output.orphans}
+			head -n 4 <(zcat {input.orphans}) | gzip > {output.orphans}
 			"""
 
 rule reformat_read_headers:
