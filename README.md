@@ -17,38 +17,38 @@ The example data file (`data/testdata/test.data.tsv`) specifies 5 hypothetical s
 Per default, `demogenas` will process (trim, errorcorrect, merge) and assemble all samples and datatypes in the datafile automatically, with the particular steps (trimmers, correctors, assemblers) as specified in the config file.
 
 ```bash
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry
 ``` 
 
 If you want to process only selected samples in the data file you can specify the sample(s) of interest with the `--select=` option, e.g.:
 ```bash
 # assemble one sample 'fastq_only'
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 
 # assemble two samples 'fastq_only' and 'bam_only'
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only,bam_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only,bam_only
 ```
 
 You can check the different behaviours of the pipeline for different sample/data types - note that `demogenas` will do different things depending on the data types provided, e.g.:
 ```bash
 # only fastq
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 # only bam
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=bam_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=bam_only
 # combination of fastq and bam
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
 # fast5 only
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
 # combination of fastq, bam and fast5
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=all_types
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=all_types
 ```
 
 Via the config file I control which steps are performed, e.g.:
 ```bash
 # process illumina data and assemble with all relevant assemblers
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 # process illumina data and assemble only with spades
-./demogenas -t serial -m assemble --configfile=data/testdata/test.config.spadesonly.yaml --dry --select=fastq_only
+./demogenas -t local -m assemble --configfile=data/testdata/test.config.spadesonly.yaml --dry --select=fastq_only
 ```
 
 If you don't want to go all the way and assemble, there are other modes, such as:
@@ -59,33 +59,31 @@ If you don't want to go all the way and assemble, there are other modes, such as
 
 ```bash
 # trim illumina data
-./demogenas -t serial -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+./demogenas -t local -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 # trim illumina data and evaluate (fastqc, kmer spectrum)
-./demogenas -t serial -m eval_illumina --configfile=data/testdata/test.config.yaml --dry --select=bam_only
+./demogenas -t local -m eval_illumina --configfile=data/testdata/test.config.yaml --dry --select=bam_only
 # trim and correct illumina data
-./demogenas -t serial -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
+./demogenas -t local -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
 # trim, correct and merge illumina dat
-./demogenas -t serial -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+./demogenas -t local -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
 ```
 
 Note that for a sample comprising only fast5 data none of the illumina specific steps will be done. You can try.
 ```bash
-./demogenas -t serial -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
-./demogenas -t serial -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
-./demogenas -t serial -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
+./demogenas -t local -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
+./demogenas -t local -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
+./demogenas -t local -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fast5_only
 ```
 
 We have extra modes to evaluate your assemblies - this can be done at any time, even if not all assemblies are finished yet.
 
 First, run `prepare_assmblies` mode - this will gather all assemblies that are finished at this stage.
 ```bash
-./demogenas -m prepare_assemblies -t serial --configfile=data/testdata/test.config.yaml --select="fastq_only"
+./demogenas -m prepare_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_only"
 ```
 
 Now, to evaluate with the methods as specified in the config file, run `evaluate_assemblies` like e.g. so:
 ```bash
-./demogenas -m evaluate_assemblies -t serial --configfile=data/testdata/test.config.yaml --select="fastq_only"
+./demogenas -m evaluate_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_only"
 ```
-
-Note that busco is not yet incorporated - just placeholder rules for now.
 

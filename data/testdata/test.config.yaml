@@ -28,7 +28,7 @@ ont_basecalling:
       optional_params: "--min_qscore 5" #--disable_qscore_filtering
 
 #long read correction
-long_correction: ["ratatosk", "canucorrect", "consent"] #"ratatosk", "consent", "canu"]
+long_correction: ["ratatosk"] #long read self correction with ["canucorrect", "consent"] is not yet functional
 
 bless_k: [21,31,41,51,61,71,81]
 

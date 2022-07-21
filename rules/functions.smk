@@ -380,7 +380,7 @@ def find_samples_with_assemblies(all_samples):
 
 def gather_assemblies(wildcards):
 	lis = []
-#	print("wildcards for quast input function: "+str(wildcards))
+#	print("wildcards for gather_assemblies input function: "+str(wildcards))
 	if wildcards.sample in df_fastq["sample"].tolist() or wildcards.sample in df_bam["sample"].tolist():
 		if "abyss" in config["assemble"]["assembler"]:
 			for trimmer in trim_list:
