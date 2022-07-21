@@ -12,24 +12,26 @@ rule alo_flye_raw:
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		options = "--genome-size 450m" # --asm-coverage 30 --resume" #e.g.:--genome-size 200m --asm-coverage 25
+		options = config["assemble"]["flye_additional_options"]
 	singularity: "docker://chrishah/flye:2.9-b1774"
 #	shadow: "minimal"
-	threads: 90
+	threads: config["threads"]["flye"]
 	resources:
-		mem_gb=750
+		mem_gb=config["max_mem_in_GB"]["flye"]
 	shell:
 		"""
 		#get all raw long reads (even if concurrency setting doesn't reflect the real number)
 		echo -e "[$(date)]\\tConcatenating the following files into {wildcards.sample}.{wildcards.basecaller}.fastq.gz prior to assembly" > {log.stdout}
 		echo -e "$(ls -1 $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g'))" >> {log.stdout}
-		cat $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g') > {wildcards.sample}.{wildcards.basecaller}.fastq.gz
+		if [ ! -d {output.dir}.temp ]; then mkdir {output.dir}.temp; fi
+		cat $(echo -e "{input.long}" | tr ' ' '\\n' | cut -d "/" -f 1-6 | sort | uniq | sed 's?^?{params.wd}/?' | sed 's?$?/{wildcards.sample}.{wildcards.basecaller}.*.fastq.gz?g') > {output.dir}.temp/{wildcards.sample}.{wildcards.basecaller}.fastq.gz
 
 		flye \
 		--out-dir {output.dir}.temp \
 		--threads {threads} {params.options} \
-		--nano-raw {wildcards.sample}.{wildcards.basecaller}.fastq.gz 1>> {log.stdout} 2> {log.stderr}
+		--nano-raw {output.dir}.temp/{wildcards.sample}.{wildcards.basecaller}.fastq.gz 1>> {log.stdout} 2> {log.stderr}
 
+		rm {output.dir}.temp/{wildcards.sample}.{wildcards.basecaller}.fastq.gz
 		mv {output.dir}.temp {output.dir}
 		touch {output.ok}
 		"""
