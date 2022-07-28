@@ -156,7 +156,7 @@ rule cor_correct_spades:
 		"docker://reslp/spades:3.15.3"
 	threads: config["threads"]["spades_correct"]
 	resources:
-		mem_gb=150
+		mem_gb=config["max_mem_in_GB"]["spades_correct"]
 	shell:
 		"""
 		echo "Host: $HOSTNAME" 1> {log.stdout} 2> {log.stderr}

@@ -97,6 +97,7 @@ threads:
 max_mem_in_GB:
    miraconvert: 20
    bless: 100
+   spades_correct: 300
    ratatosk: 100
    kmergenie: 50
    minia: 50
