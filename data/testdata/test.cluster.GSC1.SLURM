@@ -118,8 +118,6 @@ ail_abyss:
    ntasks: "threads"
    ntasks-per-core: 2
    time: "5-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_minia:
    J: MIN
    time: "30:00:00"
@@ -127,28 +125,18 @@ ail_minia:
 ail_platanus_assemble:
    J: PLA
    time: "5-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_platanus_scaffold:
    J: PLS
    time: "3-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_platanus_gapclose:
    J: PLG
    time: "2-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_spades:
    J: SPA
    time: "05-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_megahit:
    J: MEG
    time: "10-00:00:00"
-   mail-type: "BEGIN"
-   mail-user: "christoph.hahn@uni-graz.at"
 ail_gather_illumina_assemblies:
    J: GIA
    mem: "4G"
