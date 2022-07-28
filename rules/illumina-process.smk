@@ -350,6 +350,8 @@ rule fil_repair_extract_pe:
 		bam = rules.fil_repair_sort.output,
 		forw = rules.fil_kmc_filter_forw.output,
 		reve = rules.fil_kmc_filter_reve.output
+	params:
+		wd = os.getcwd()
 	threads: 1
 	singularity:
 		"docker://reslp/samtools:1.9"
@@ -368,7 +370,7 @@ rule fil_repair_extract_pe:
 		samtools view {input.bam} | perl -ne 'chomp; push(@a, $_); if (scalar @a == 2){{@1 = split("\\t", $a[0]); @2 = split("\\t", $a[1]); if ($1[0] eq $2[0]){{$1[11] =~ s/RG:Z://; $2[11] =~ s/RG:Z://; $1[0] = "$1[0] $1[11]"; $2[0] = "$2[0] $2[11]"; print STDOUT "\@$1[0]\\n$1[9]\\n+\\n$1[10]\\n"; print STDOUT "\@$2[0]\\n$2[9]\\n+\\n$2[10]\\n"; @a=()}}else{{$singleton = shift @a; @line = split("\\t", $singleton); $line[11] =~ s/RG:Z://; $line[0] = "$line[0] $line[11]"; print STDERR "$line[0]\\n"}}}}' 1> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0000.interleaved.fastq 2> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.singletons.txt
 		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0000.interleaved.fastq | perl -ne '$h1=$_; $s1=<>; $p1=<>; $q1=<>; $h2=<>; $s2=<>; $p2=<>; $q2=<>; print STDOUT "$h1$s1$p1$q1"; print STDERR "$h2$s2$p2$q2"' 1> {output.forw} 2> {output.reve}
 
-		rm {input.forw} {input.reve} {input.bam}
+		rm -rv {params.wd}/{input.forw} {params.wd}/{input.reve} {params.wd}/{input.bam} 1>> {log.stdout} 2>> {log.stderr}
 		"""
 
 rule fil_repair_extract_se:
@@ -376,6 +378,8 @@ rule fil_repair_extract_se:
 		singletons = rules.fil_repair_extract_pe.output.singletons,
 		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
 		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+	params:
+		wd = os.getcwd()
 	threads: 1
 	singularity:
 		"docker://chrishah/mira:v4.9.6"
@@ -394,14 +398,15 @@ rule fil_repair_extract_se:
 		cat {input.singletons} | perl -ne 'chomp; $forw = $_; $reve = $_; if ($_ =~ / 1/){{$reve =~ s/ 1/ 2/;}}else{{$forw =~ s/ 2/ 1/;}} print STDOUT "$forw\\n"; print STDERR "$reve\\n"' 1> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt 2> results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt
 		i=0001
 		for f in $(echo "{input.f_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.1.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.1"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2> {log.stderr}
-		for f in $(echo "{input.r_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.2"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2> {log.stderr}
+		i=0001
+		for f in $(echo "{input.r_paired}" | sort); do cmd="miraconvert -n results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.2.list.txt $f results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/$i.2"; echo $cmd; $cmd; i=$(printf "%04d" $(( i + 1 ))); done 1>> {log.stdout} 2>> {log.stderr}
 		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.1.fastq > results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.1.fastq
 		cat results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.2.fastq > results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.2.fastq
 		rm results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/0*.fastq results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.?.list.txt
 
-		gzip -v results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.?.fastq 1>> {log.stdout} 2> {log.stderr}
+		gzip -v results/{wildcards.sample}/kmc/filtered/{wildcards.filter_k}-{wildcards.mincov}-{wildcards.minprop}/{wildcards.sample}.k{wildcards.filter_k}.{wildcards.mincov}.{wildcards.minprop}.filtered.?.fastq 1>> {log.stdout} 2>> {log.stderr}
 		
-		rm {input.singletons}
+		rm -rv {params.wd}/{input.singletons} 1>> {log.stdout} 2>> {log.stderr}
 		"""
 
 rule fil_kmc_filtered:
