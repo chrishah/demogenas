@@ -111,8 +111,10 @@ rule eva_busco:
 		logs = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/logs.tar.gz",
 		full_table = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/full_table_busco.tsv",
 		short_summary ="results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/short_summary_busco.txt",
+		short_summary_f_multiqc ="results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/short_summary_{sample}.{combination}.txt",
 		missing_busco_list ="results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/missing_busco_list_busco.tsv",
 		single_copy_buscos = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/single_copy_busco_sequences.tar",
+		fragmented_buscos = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/fragmented_busco_sequences.tar",
 		single_copy_buscos_tarlist = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/single_copy_busco_sequences.txt"
 
 	threads: int(config["threads"]["busco"])
@@ -173,11 +175,16 @@ rule eva_busco:
 		cd ..
 		tar -pcf {output.single_copy_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences single_copy_busco_sequences 
 		tar -tvf {output.single_copy_buscos} > {output.single_copy_buscos_tarlist} 2>&1 | tee -a $basedir/{log}
+		tar -pcf {output.fragmented_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences fragmented_busco_sequences 
 
 		#move output files:
 		mv {wildcards.combination}/run_{params.set}/full_table.tsv {output.full_table}
 		mv {wildcards.combination}/run_{params.set}/short_summary.txt {output.short_summary}
 		mv {wildcards.combination}/run_{params.set}/missing_busco_list.tsv {output.missing_busco_list}
+
+		cd results/{wildcards.sample}/assembly_evaluation/busco/{params.set}/{wildcards.combination}/run_busco/
+		ln -s short_summary_busco.txt short_summary_{wildcards.sample}.{wildcards.combination}.txt
+		cd - &>/dev/null
 		
 		#touch checkpoint
 		touch {output.done}
@@ -190,9 +197,16 @@ rule eva_gather_busco:
 #		expand("results/{sample}/assembly_evaluation/busco/{combination}.busco.done", sample=s_with_ass, combination=combinations)
 #		expand("results/{sample}/assembly_evaluation/busco/{combination}.busco.done", sample=s_with_ass, combination=get_combs_per_sample(s_with_ass))
 	output:
-		"results/{sample}/assembly_evaluation/busco/busco.done"
+		"results/{sample}/assembly_evaluation/busco/busco.done",
+		directory("results/{sample}/assembly_evaluation/busco/multiqc_data"),
+		"results/{sample}/assembly_evaluation/busco/multiqc_report.html"
+	log:
+		log = "results/{sample}/logs/multiqc.busco.log.txt",
+	singularity:
+		"docker://ewels/multiqc:v1.12"
 	shell:
 		"""
+		multiqc -f --outdir results/{wildcards.sample}/assembly_evaluation/busco results/{wildcards.sample}/assembly_evaluation/busco/*/*/run_busco/short_summary_{wildcards.sample}* 
 		touch {output}
 		"""
 
