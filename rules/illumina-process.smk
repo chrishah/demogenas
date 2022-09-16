@@ -173,7 +173,7 @@ rule eva_fastqc_trimmed:
 	threads: 2
 	shell:
 		"""
-		fastqc -t {threads} -o ./ {input} 1> {log.stdout} 2> {log.stderr}
+		for f in $(echo "{input}"); do if [[ -s $f ]]; then fastqc -t {threads} -o ./ $f; fi; done 1> {log.stdout} 2> {log.stderr}
 		mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trimgalore/{params.lib}/
 		touch {output}
 		
@@ -228,7 +228,8 @@ rule eva_kmc:
 	shell:
 		"""
 		echo -e "$(date)\tStarting kmc"
-		echo "{input}" | sed 's/ /\\n/g' > fastqs.txt
+		## add all files that are not empty to file of filenames
+		for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done > fastqs.txt
 		mkdir {params.sample}.db
 		kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
 		#kmc_tools histogram {params.sample} -ci{params.mincount} -cx{params.maxcount} {output.hist}
