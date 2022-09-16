@@ -298,20 +298,20 @@ rule ail_spades:
 		reads = get_illumina_assembly_input,
 		bestk = rules.ail_kmergenie.output.bestk 
 	output:
-		ok = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok"
+		ok = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}.{options}/spades.ok"
 	log:
-		stdout = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.stdout.txt",
-		stderr = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.stderr.txt"
-	benchmark: "results/{sample}/benchmarks/spades.{trimmer}-{corrector}-{merger}.{kmode}.txt"
+		stdout = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.{options}.stdout.txt",
+		stderr = "results/{sample}/logs/spades.{trimmer}-{corrector}-{merger}.{kmode}.{options}.stderr.txt"
+	benchmark: "results/{sample}/benchmarks/spades.{trimmer}-{corrector}-{merger}.{kmode}.{options}.txt"
 	params:
 		wd = os.getcwd(),
 		sample = "{sample}",
-		dir = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}",
+		dir = "results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}.{options}",
 		defaultks = "21,33,55,77",
 		longks = "21,33,55,77,99,127",
 		kmode = "{kmode}",
 		resume = config["assemble"]["spades_resume"],
-		optional = config["assemble"]["spades_additional_options"],
+		optional = lambda wildcards: "" if wildcards.options == 'default' else config["assemble"]["spades_options"][wildcards.options],
 		mode = "only-assembler", #could be careful, only-error-correction, only-assembler,
 	singularity:
 		"docker://reslp/spades:3.15.3"
@@ -322,7 +322,7 @@ rule ail_spades:
 	shell:
 		"""
 		bestk=$(cat {input.bestk})
-		if [ "{params.resume}" == "yes" ] && [ -d {params.dir}/{params.sample} ]
+		if [ "{params.resume}" == "yes" ] && [ -f {params.dir}/{params.sample}/input_dataset.yaml ]
 		then
 			echo -e "\\n[$(date)]\\tContinuing previous run" 1>> {log.stdout} 2> {log.stderr}
 			echo -e "[$(date)]\\tResuming SPAdes" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}

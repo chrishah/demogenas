@@ -1,32 +1,40 @@
 samples: "data/data.csv.Sylvia-genome"
 
-#####
-illumina_assembly_input: ["tri"] #, "tri-cor", "tri-mer", "tri-cor-mer"]
-
 ### short read trimming
 illumina_trimming: ["trimgalore"]
 
+kmer_filtering: 
+   k: [21]
+   minprop: [0.5, 0.6, 0.7]
+   mincov: [22]
+   assemble: "no" #Needs to be 'yes' so that the kmer filtered reads are also subject to error correction, merging and assembly
+
+
 ### short read error correction
-illumina_correction: ["bless", "spades"]
+illumina_correction: ["bless","spades"]
 
 ### short read merging
 illumina_merge:
    merger: ["usearch"] #, "flash"]
-   merge_at_stage: ["trimmed", "corrected"] #could be "trimmed", "corrected" or both
+   merge_at_stage: ["corrected"] #could be "trimmed", "corrected" or both
 
 #ont basecallers
 ont_basecalling:
    basecaller: ["guppy", "flappie"]  #, "flappie", "guppy"] #"bonito"]
-   concurrency: 10
-   minlength: 300
+   concurrency: 50
+   minlength: 1000
+   guppy:
+      kit: "SQK-LSK109" #"SQK-LSK110",
+      flowcell: "FLO-MIN106" #"FLO-MIN111",
+      optional_params: "--min_qscore 5" #--disable_qscore_filtering
 
 #long read correction
-long_correction: ["ratatosk", "canu", "consent"] #"ratatosk", "consent", "canu"]
+long_correction: ["ratatosk", "canucorrect", "consent"] #"ratatosk", "consent", "canu"]
 
-bless_k: [21,31,41]
+bless_k: [41,51,61,71,81,91]
 
 kmc:
-   max_mem_in_GB: 8
+   max_mem_in_GB: 24
    k: [21] #,31,41,51,61,71]
    mincount: 2
    maxcount: 1000000000
@@ -34,11 +42,32 @@ kmc:
 
 ### short read assembly
 assemble: 
-   assembler: ["abyss", "minia", "platanus", "spades", "abyss_scaffold", "spades_hybrid"] #"haslr", "flye", "canu"] 
-   assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
+   assembler: ["abyss", "minia", "platanus", "spades"]
+   assemble_at_stage: ["trimmed", "corrected", "merged"] #"corrected", "merged"] #possible are "trimmed", "corrected", "merged"
    default_k: [51]
-#assembler: ["haslr"] #, "spades", "platanus"]
+   spades_options_to_do: ["default", "cov_cutoff_auto"] #any keyword mentioned here needs to be present with a value in the spades_options section below
+   spades_options: 
+      default: "" #this is not really needed - just to be explicit
+      cov_cutoff_auto: "--cov-cutoff auto"
+   spades_kmode: ["default"] #["bestk","default"]   
+   spades_resume: "yes" #you have to say 'yes' to continue, everything else will start afresh
+   megahit_additional_options: 
+   flye_additional_options: ""
 
+evaluate_assemblies:
+   evaluator: ["quast", "busco", "blobtools"]
+   minlength: 1000
+   busco:
+      set: "arthropoda_odb10" #metazoa_odb10
+      augustus_species: #"fly" #if this is set busco will run augustus, else it will run metaeuk 
+      additional_parameters: ""
+   bowtie2:
+      additional_parameters: "--phred33 --fr --quiet --maxins 800"
+   blobtools:
+      taxrule: "bestsumorder"
+      create_additional_parameters: ""
+      view_additional_parameters: ""
+      plot_additional_parameters: ""
 
 #ectools:
 #   ec_concurrency: 100
@@ -52,13 +81,37 @@ abyss:
    assembly_to_scaffold: "tricormer" #may also be "tri-bestk" or others
 
 threads:
-   samtools: 4
-   trimmomatic: 24
-   kmc: 5
-   bless: 20
+   kmc: 24
+   bless: 10
    spades_correct: 90
+   ratatosk: 20
    mergepairs_usearch: 20
-   abyss: 90
-   minia: 10
-   platanus: 90
-   spades: 90
+   kmergenie: 40
+   abyss: 92
+   minia: 40
+   platanus_assemble: 100
+   platanus_scaffold: 40
+   platanus_gapclose: 40
+   spades: 80
+   megahit: 90
+   flye: 40
+   quast: 4
+   busco: 40
+   bowtie2: 8
+   samtools: 8
+   samtools_index: 4
+   guppy: 10
+max_mem_in_GB:
+   miraconvert: 20
+   bless: 100
+   spades_correct: 300
+   ratatosk: 100
+   kmergenie: 50
+   minia: 100
+   abyss: 950
+   platanus_assemble: 1900
+   platanus_scaffold: 300
+   platanus_gapclose: 300
+   spades: 1950
+   megahit: 2000
+   flye: 300

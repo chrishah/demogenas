@@ -44,7 +44,10 @@ assemble:
    assembler: ["abyss", "minia", "platanus", "spades", "megahit", "haslr", "abyss_scaffold", "spades_hybrid", "flye", "canu"] 
    assemble_at_stage: ["trimmed", "corrected", "merged"] #possible are "trimmed", "corrected", "merged"
    default_k: [51]
-   spades_additional_options: #e.g. "--meta"
+   spades_options_to_do: ["default", "cov_cutoff_auto"] #any keyword mentioned here needs to be present with a value in the spades_options section below
+   spades_options: 
+      default: "" #this is not really needed - just to be explicit
+      cov_cutoff_auto: "--cov-cutoff auto"
    spades_kmode: ["default"] #["bestk","default"]   
    spades_resume: "yes" #you have to say 'yes' to continue, everything else will start afresh
    megahit_additional_options: 

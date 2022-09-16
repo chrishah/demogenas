@@ -398,11 +398,12 @@ def gather_assemblies(wildcards):
 					for merger in merge_list:
 						lis.append("results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto/platanus.gapclose.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger))
 		if "spades" in config["assemble"]["assembler"]:
-			for kmode in config["assemble"]["spades_kmode"]:
-				for trimmer in trim_list:
-					for corrector in correct_list:
-						for merger in merge_list:
-							lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode))
+			for suffix in config["assemble"]["spades_options_to_do"]:
+				for kmode in config["assemble"]["spades_kmode"]:
+					for trimmer in trim_list:
+						for corrector in correct_list:
+							for merger in merge_list:
+								lis.append("results/{sample}/assembly/spades/{trimmer}-{corrector}-{merger}/{kmode}.{suffix}/spades.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, kmode=kmode, suffix=suffix))
 		if "megahit" in config["assemble"]["assembler"]:
 			for trimmer in trim_list:
 				for corrector in correct_list:
@@ -460,6 +461,25 @@ def gather_assemblies(wildcards):
 										lis.append("results/{sample}/assembly/flye/{trimmer}-{corrector}-{merger}-{basecaller}-{longcorrection}/flye.ok".format(sample=wildcards["sample"], trimmer=trimmer, corrector=corrector, merger=merger, longcorrection=l, basecaller=basecaller))
 #	print(lis)
 	return lis
+
+def check_options():
+	for id in config["assemble"]["spades_options_to_do"]:
+		print(id)
+		if not id in config["assemble"]["spades_options"]:
+			if not id == 'default':
+				exit("There are no options for 'spades' specified under '"+id+"' in your config file - please doublecheck")
+
+check_options()
+
+#def get_spades_options(wildcards):
+#	r = "spades"
+#	print("OPTIONAL options for "+r+": "+wildcards.options)
+#	if wildcards.options == "default":
+#		return None
+#	elif wildcards.options in config["assemble"][r+"_options"]:
+#		return config["assemble"][r+"_options"][wildcards.options]
+#	else:
+#		exit("There are no options for '+r+' specified under '"+wildcards.options+"' - please doublecheck")
 
 def get_long_assembly_input(wildcards):
 #	print("\nwildcards for long basecalled input function: "+str(wildcards))
