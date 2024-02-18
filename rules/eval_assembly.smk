@@ -47,6 +47,7 @@ def gather_blobtools(wildcards):
 	return lisout
 
 def gather_assemblies(wildcards):
+	print("GATHERING:",wildcards.sample)
 	lis = glob.glob("results/"+wildcards.sample+"/assembly_evaluation/assemblies/*.min"+str(config["evaluate_assemblies"]["minlength"])+".fasta")
 	print("\n\nList of file to be processed by quast:\n"+str(lis))
 	return lis
@@ -114,6 +115,7 @@ rule eva_busco:
 		short_summary_f_multiqc ="results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/short_summary_{sample}.{combination}.txt",
 		missing_busco_list ="results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/missing_busco_list_busco.tsv",
 		single_copy_buscos = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/single_copy_busco_sequences.tar",
+		multi_copy_buscos = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/multi_copy_busco_sequences.tar",
 		fragmented_buscos = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/fragmented_busco_sequences.tar",
 		single_copy_buscos_tarlist = "results/{sample}/assembly_evaluation/busco/"+config["evaluate_assemblies"]["busco"]["set"]+"/{combination}/run_busco/single_copy_busco_sequences.txt"
 
@@ -175,6 +177,7 @@ rule eva_busco:
 		cd ..
 		tar -pcf {output.single_copy_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences single_copy_busco_sequences 
 		tar -tvf {output.single_copy_buscos} > {output.single_copy_buscos_tarlist} 2>&1 | tee -a $basedir/{log}
+		tar -pcf {output.multi_copy_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences multi_copy_busco_sequences
 		tar -pcf {output.fragmented_buscos} -C {wildcards.combination}/run_{params.set}/busco_sequences fragmented_busco_sequences 
 
 		#move output files:
@@ -212,9 +215,9 @@ rule eva_gather_busco:
 
 rule eva_blobtools:
 	input:
-		index = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam.bai",
 		assembly = "results/{sample}/assembly_evaluation/assemblies/{combination}.fasta",
-		bam = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam"
+		bam = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam",
+		bai = "results/{sample}/assembly_evaluation/mapping/{combination}/{sample}.sorted.duprmvd.bam.bai"
 	output:
 		"results/{sample}/assembly_evaluation/blobtools/{combination}/blobtools.done"
 	log:
