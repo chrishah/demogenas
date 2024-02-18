@@ -79,11 +79,11 @@ We have extra modes to evaluate your assemblies - this can be done at any time, 
 
 First, run `prepare_assmblies` mode - this will gather all assemblies that are finished at this stage.
 ```bash
-./demogenas -m prepare_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_only"
+./demogenas -m prepare_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_bam"
 ```
 
 Now, to evaluate with the methods as specified in the config file, run `evaluate_assemblies` like e.g. so:
 ```bash
-./demogenas -m evaluate_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_only"
+./demogenas -m evaluate_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_bam"
 ```
 
