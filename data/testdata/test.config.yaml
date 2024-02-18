@@ -1,7 +1,8 @@
 samples: "data/testdata/test.data.tsv"
 
 ### short read trimming
-illumina_trimming: ["trimgalore"]
+skip_trimming: #"yes" 
+illumina_trimming: ["trimgalore"] #["None"]
 
 kmer_filtering:
    k: [21]
@@ -52,6 +53,10 @@ assemble:
    spades_resume: "yes" #you have to say 'yes' to continue, everything else will start afresh
    megahit_additional_options: 
    flye_additional_options: ""
+   platanus_options:
+      assemble: ""
+      scaffold: ""
+      gapclose: ""
 
 evaluate_assemblies:
    evaluator: ["quast", "busco", "blobtools"]

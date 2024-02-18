@@ -34,7 +34,7 @@ rule mer_usearch:
 		usearch = rules.mer_setup_usearch.output,
 		script = "bin/usearch_mergepairs.sh"
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		merged = "results/{sample}/read-merging/usearch/{trimmer}-{corrector}/{sample}.merged.fastq.gz",
 		nm1 = "results/{sample}/read-merging/usearch/{trimmer}-{corrector}/{sample}.notmerged.1.fastq.gz",
@@ -71,7 +71,7 @@ rule mer_flash:
 	input:
 		to_merge
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		"results/{sample}/read-merging/flash/{trimmer}-{corrector}/{trimmer}-{corrector}-flash.ok"
 	shell:
@@ -88,7 +88,7 @@ rule mer_gather_illumina_merged:
 			corrector=correct_list_for_merging,
 			merger=merge_list_for_merging)
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		ok = "results/{sample}/read-merging/illumina-merging.ok",
 	threads: 1

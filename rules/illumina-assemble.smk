@@ -50,7 +50,7 @@ rule ail_kmergenie:
 	shadow: "minimal"
 	shell:
 		"""
-		echo {input} | tr ' ' '\\n' > fofn.txt
+		for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done > fofn.txt
 		#capturing the returncode both in case of success or (||) when dying witha n error stops snakemake to exit the shell upon an error. 
 		#kmergenie exits with and error if no best kmer could be found - in this case we want the pipeline to go on so I check if this was the cause of the error in the next if
 		# and if yes we create the expected output files
@@ -111,13 +111,20 @@ rule ail_abyss:
 		cd {params.dir}
 		if [ $bestk -eq 0 ]
 		then
-			echo -e "Setting k to {params.defaultk}" 1> {params.wd}/{log.stdout}
+			echo -e "Setting k to {params.defaultk}" 1>> {params.wd}/{log.stdout}
 			touch k.set.manually.to.{params.defaultk}
 			bestk={params.defaultk}
 			kcutoff=2
 		fi
 
-		abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' default 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+		nonempty=$(for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done | wc -l)
+		if [[ $nonempty -eq 3 ]]
+		then
+			abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' se='{params.wd}/{input.reads[2]}' default 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		else
+			echo -e "Running abyss with pe reads only" 1>> {params.wd}/{log.stdout}
+			abyss-pe -C {params.wd}/{params.dir} k=$bestk name={params.sample} np=$(( {threads} - 1 )) in='{params.wd}/{input.reads[0]} {params.wd}/{input.reads[1]}' default 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		fi
 		touch {params.wd}/{output.ok}
 		"""
 rule ail_minia:
@@ -184,7 +191,8 @@ rule ail_platanus_assemble:
 		sample = "{sample}",
 		dir = "results/{sample}/assembly/platanus/{trimmer}-{corrector}-{merger}/auto",
 		min = 100,
-		tmp = "."
+		tmp = ".",
+		options = config["assemble"]["platanus_options"]["assemble"]
 	singularity:
 		"docker://chrishah/platanus:v1.2.4"
 #	shadow: "minimal"
@@ -200,15 +208,27 @@ rule ail_platanus_assemble:
 		else
 			rm -f {params.dir}/* 
 		fi
-		
+	
+		nonempty=$(for f in $(echo "{input.reads}"); do if [[ -s $f ]]; then echo "$f"; fi; done | wc -l)
+
 		cd {params.dir}
 		echo -e "\n$(date)\tRunning platanus assemble" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-		platanus assemble \
-		-o {params.sample} \
-		-f <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) <(zcat {params.wd}/{input.reads[2]}) \
-		-t {threads} \
-		-m {resources.mem_gb} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-
+		if [[ $nonempty -eq 3 ]]
+		then
+			platanus assemble \
+			-o {params.sample} \
+			-f <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) <(zcat {params.wd}/{input.reads[2]}) \
+			-t {threads} \
+			-m {resources.mem_gb} -tmp {params.tmp} {params.options} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		else
+			echo -e "$(date)\tOmitting se reads" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			platanus assemble \
+			-o {params.sample} \
+			-f <(zcat {params.wd}/{input.reads[0]}) <(zcat {params.wd}/{input.reads[1]}) \
+			-t {threads} \
+			-m {resources.mem_gb} -tmp {params.tmp} {params.options} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			
+		fi
 		touch {params.wd}/{output}
 		"""
 
@@ -277,15 +297,26 @@ rule ail_platanus_gapclose:
 		mem_gb=config["max_mem_in_GB"]["platanus_gapclose"]
 	shell:
 		"""
+		nonempty=$(for f in $(echo "{input.reads}"); do if [[ -s $f ]]; then echo "$f"; fi; done | wc -l)
+
 		cd {params.dir}
 		echo -e "\n$(date)\tRunning platanus gap close" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-		platanus gap_close \
-		-o {params.sample} \
-		-c {params.sample}_scaffold.fa \
-		-f <(zcat {params.wd}/{input.reads[2]}) \
-		-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
-		-t {threads} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-
+		if [[ $nonempty -eq 3 ]]
+		then
+			platanus gap_close \
+			-o {params.sample} \
+			-c {params.sample}_scaffold.fa \
+			-f <(zcat {params.wd}/{input.reads[2]}) \
+			-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
+			-t {threads} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		else
+			echo -e "$(date)\tOmitting se reads" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			platanus gap_close \
+			-o {params.sample} \
+			-c {params.sample}_scaffold.fa \
+			-IP1 {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta \
+			-t {threads} -tmp {params.tmp} 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		fi
 		rm {wildcards.sample}.min{params.min}.1.fasta {wildcards.sample}.min{params.min}.2.fasta
 		touch {params.wd}/{output}
 		"""
@@ -322,6 +353,8 @@ rule ail_spades:
 	shell:
 		"""
 		bestk=$(cat {input.bestk})
+		nonempty=$(for f in $(echo "{input.reads}"); do if [[ -s $f ]]; then echo "$f"; fi; done | wc -l)
+
 		if [ "{params.resume}" == "yes" ] && [ -f {params.dir}/{params.sample}/input_dataset.yaml ]
 		then
 			echo -e "\\n[$(date)]\\tContinuing previous run" 1>> {log.stdout} 2> {log.stderr}
@@ -366,15 +399,27 @@ rule ail_spades:
 		cd {params.dir}
 
 		echo -e "[$(date)]\\tStarting SPAdes" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-		spades.py \
-		-o ./{params.sample} \
-		-1 {params.wd}/{input.reads[0]} -2 {params.wd}/{input.reads[1]} -s {params.wd}/{input.reads[2]} \
-		$krange \
-		--checkpoints last \
-		--{params.mode} \
-		-t $(( {threads} - 1 )) \
-		-m $(( {resources.mem_gb} - 5 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
-
+		if [[ $nonempty -eq 3 ]]
+		then
+			spades.py \
+			-o ./{params.sample} \
+			-1 {params.wd}/{input.reads[0]} -2 {params.wd}/{input.reads[1]} -s {params.wd}/{input.reads[2]} \
+			$krange \
+			--checkpoints last \
+			--{params.mode} \
+			-t $(( {threads} - 1 )) \
+			-m $(( {resources.mem_gb} - 5 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		else
+			echo -e "[$(date)]\\tOmitting single end read files - empty" 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+			spades.py \
+			-o ./{params.sample} \
+			-1 {params.wd}/{input.reads[0]} -2 {params.wd}/{input.reads[1]} \
+			$krange \
+			--checkpoints last \
+			--{params.mode} \
+			-t $(( {threads} - 1 )) \
+			-m $(( {resources.mem_gb} - 5 )) $(if [[ "{params.optional}" != "None" ]]; then echo "{params.optional}"; fi) 1>> {params.wd}/{log.stdout} 2>> {params.wd}/{log.stderr}
+		fi
 		touch spades.ok
 		"""
 rule ail_megahit:

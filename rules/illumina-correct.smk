@@ -62,7 +62,7 @@ rule cor_bless_pe:
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
 		bless_runs = expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-pe.done",
 		forward = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.1.fastq.gz",
@@ -100,7 +100,7 @@ rule cor_bless_se:
 		orphans = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz",
 		bless_runs = expand("results/{{sample}}/errorcorrection/bless/{{trimmer}}/bless-k{blessk}/bless-k{blessk}.done", sample=Illumina_process_df["sample"], blessk=config["bless_k"], trimmer=config["illumina_trimming"])
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		orphans = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-corrected/bless.corrected.se.fastq.gz",
 		ok = "results/{sample}/errorcorrection/bless/{trimmer}/bless-kbest-se.done"
@@ -124,10 +124,17 @@ rule cor_bless_se:
 		
 		#set stage
 		if [[ ! -d {params.dir}/bless-kbest-corrected ]]; then mkdir -p {params.dir}/bless-kbest-corrected; else rm -rf {params.dir}/bless-kbest-corrected/bless-k$bestk-se*; fi
-		#run bless
-		bless -read {input.orphans} -kmerlength $bestk -max_mem {resources.mem_gb} -load {params.dir}/bless-k$bestk/bless-k$bestk -notrim -smpthread {threads} -gzip -prefix {params.dir}/bless-kbest-corrected/bless-k$bestk-se 2>&1 | tee {log}
 
-		ln -s {params.wd}/{params.dir}/bless-kbest-corrected/bless-k$bestk-se.corrected.fastq.gz {output.orphans}
+		if [[ -s {input.orphans} ]]
+		then
+			#run bless
+			bless -read {input.orphans} -kmerlength $bestk -max_mem {resources.mem_gb} -load {params.dir}/bless-k$bestk/bless-k$bestk -notrim -smpthread {threads} -gzip -prefix {params.dir}/bless-kbest-corrected/bless-k$bestk-se 2>&1 | tee {log}
+			ln -s {params.wd}/{params.dir}/bless-kbest-corrected/bless-k$bestk-se.corrected.fastq.gz {output.orphans}
+		else
+			echo -e "Read file is empty - touching results file" >> {log}
+			touch {output.orphans}
+		fi
+
 		touch {output.ok}
 		"""
 
@@ -138,7 +145,7 @@ rule cor_correct_spades:
 		reverse = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.2.fastq.gz",
 		orphans = "results/{sample}/trimming/{trimmer}/{sample}-full/{sample}.{trimmer}.se.fastq.gz",
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		forward = "results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.1.fastq.gz",
 		reverse = "results/{sample}/errorcorrection/spades/{trimmer}/spades-corrected/corrected/spades.corrected.2.fastq.gz",
@@ -180,7 +187,7 @@ rule cor_gather_illumina_corrected:
 	input:
 		control_illumina_ec
 	wildcard_constraints:
-		trimmer="trimgalore.*",
+		trimmer="None|trimgalore.*",
 	output:
 		ok = "results/{sample}/errorcorrection/illumina-correction-{trimmer}.ok",
 	threads: 1

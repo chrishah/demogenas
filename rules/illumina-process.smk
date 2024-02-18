@@ -128,114 +128,276 @@ rule tri_gather_short_trimmed_by_lib:
 		touch {output.ok}
 		"""
 
-rule eva_fastqc_raw:
+rule tri_gather_short_direct_by_lib:
 	input:
-		forward = input_for_trimgalore_f,
-		reverse = input_for_trimgalore_r,
+		forward = input_for_clean_direct_fp,
+		reverse = input_for_clean_direct_rp,
 	params:
 		wd = os.getcwd(),
-		lib = "{lib}",
 		sample = "{sample}",
-	singularity:
-		"docker://chrishah/trim_galore:0.6.0"
-	log:
-		stdout = "results/{sample}/logs/fastqc_raw.{sample}.{lib}.stdout.txt",
-		stderr = "results/{sample}/logs/fastqc_raw.{sample}.{lib}.stderr.txt"
 	output:
-		ok = "results/{sample}/read_qc/fastqc_raw/{lib}/{sample}.{lib}.status.ok",
+		ok = "results/{sample}/trimming/None/{sample}-full/{sample}.cat.status.ok",
+		f_direct = "results/{sample}/trimming/None/{sample}-full/{sample}.None.1.fastq.gz",
+		r_direct = "results/{sample}/trimming/None/{sample}-full/{sample}.None.2.fastq.gz",
+		o_direct = "results/{sample}/trimming/None/{sample}-full/{sample}.None.se.fastq.gz",
 	shadow: "minimal"
 	threads: 2
 	shell:
 		"""
-		fastqc -o ./ {input} 1> {log.stdout} 2> {log.stderr}
-		mv *.zip *.html {params.wd}/results/{params.sample}/read_qc/fastqc_raw/{params.lib}/
-		touch {output}
+		if [ $(echo {input.forward} | wc -w) -gt 1 ]
+		then
+			cat {input.forward} > {output.f_direct}
+			cat {input.reverse} > {output.r_direct}
+		else
+			ln -s ../../../../../{input.forward} {output.f_direct}
+			ln -s ../../../../../{input.reverse} {output.r_direct}
+		fi
+		touch {output.o_direct}
+		touch {output.ok}
 		"""
 
-rule eva_fastqc_trimmed:
-	input:
-		f_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz",
-		r_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz",
-		f_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz",
-		r_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz"
-	params:
-		wd = os.getcwd(),
-		lib = "{lib}",
-		sample = "{sample}",
-	singularity:
-		"docker://chrishah/trim_galore:0.6.0"
-	log:
-		stdout = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stdout.txt",
-		stderr = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stderr.txt"
-	output:
-		ok = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.fastqc.status.ok",
-	shadow: "minimal"
-	threads: 2
-	shell:
-		"""
-		for f in $(echo "{input}"); do if [[ -s $f ]]; then fastqc -t {threads} -o ./ $f; fi; done 1> {log.stdout} 2> {log.stderr}
-		mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trimgalore/{params.lib}/
-		touch {output}
-		
-		"""
-rule eva_stats:
-	input:
-		lambda wildcards: expand(rules.eva_fastqc_trimmed.output.ok, sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist())))
-	singularity:
-		"docker://chrishah/r-docker:latest"
-	log:
-		stdout = "results/{sample}/logs/readstats.{sample}.stdout.txt",
-		stderr = "results/{sample}/logs/readstats.{sample}.stderr.txt"
-	output: 
-		stats = "results/{sample}/trimming/trimgalore/{sample}.readstats.txt"
-	threads: 2
-	shadow: "shallow"
-	shell:
-		"""
-		echo -e "$(date)\tGetting read stats" 1> {log.stdout}
-		bin/get_readstats_from_fastqc.sh $(echo {input} | sed 's/ /,/g' | sed 's/.fastqc.status.ok//g') 1> {output.stats} 2> {log.stderr}
-		stats=$(cat {output.stats})
-		echo -e "Cummulative length: $(cat {output.stats} | cut -d " " -f 1)" 1>> {log.stdout} 2>> {log.stderr}
-		echo -e "Average read length: $(cat {output.stats} | cut -d " " -f 2)\\n" 1>> {log.stdout} 2>> {log.stderr}
-		echo -e "$(date)\tDone!" 1>> {log.stdout}
-		"""
-rule eva_kmc:
-	input:
-		f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
-		r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
-		f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
-		r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
-	params:
-		sample = "{sample}",
-		k = "{k}",
-		max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
-		mincount = config["kmc"]["mincount"],
-		maxcount = config["kmc"]["maxcount"],
-		maxcounter = config["kmc"]["maxcounter"],
-		nbin = 64,
-	threads: config["threads"]["kmc"]
-	singularity:
-		"docker://chrishah/kmc3-docker:v3.0"
-	log:
-		stdout = "results/{sample}/logs/kmc.{sample}.k{k}.stdout.txt",
-		stderr = "results/{sample}/logs/kmc.{sample}.k{k}.stderr.txt"
-	output: 
-#		pre = "results/{sample}/kmc/{sample}.k{k}.kmc_pre",
-#		suf = "results/{sample}/kmc/{sample}.k{k}.kmc_suf",
-		hist = "results/{sample}/kmc/{sample}.k{k}.histogram.txt",
-		genomescope = "results/{sample}/kmc/{sample}.k{k}.histogram.genomescope.txt"
-	shadow: "minimal"
-	shell:
-		"""
-		echo -e "$(date)\tStarting kmc"
-		## add all files that are not empty to file of filenames
-		for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done > fastqs.txt
-		mkdir {params.sample}.db
-		kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
-		#kmc_tools histogram {params.sample} -ci{params.mincount} -cx{params.maxcount} {output.hist}
-		kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
-		cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
-		"""
+if config["skip_trimming"] == "yes":
+	rule eva_fastqc_direct:
+		input:
+			f_paired = input_for_trimgalore_f,
+			r_paired = input_for_trimgalore_r,
+		params:
+			wd = os.getcwd(),
+			lib = "{lib}",
+			sample = "{sample}",
+			dir = "results/{sample}/trimming/direct/{lib}"
+		singularity:
+			"docker://chrishah/trim_galore:0.6.0"
+		log:
+			stdout = "results/{sample}/logs/fastqc_direct.{sample}.{lib}.stdout.txt",
+			stderr = "results/{sample}/logs/fastqc_direct.{sample}.{lib}.stderr.txt"
+		output:
+			ok = "results/{sample}/trimming/direct/{lib}/{sample}.{lib}.fastqc.status.ok",
+		shadow: "minimal"
+		threads: 2
+		shell:
+			"""
+			for f in $(echo "{input}"); do if [[ -s $f ]]; then fastqc -t {threads} -o ./ $f; fi; done 1> {log.stdout} 2> {log.stderr}
+			mv *.zip *.html {params.wd}/{params.dir}/
+			touch {output}
+			
+			"""
+	rule eva_stats_direct:
+		input:
+			lambda wildcards: expand(rules.eva_fastqc_direct.output.ok, sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist())))
+		singularity:
+			"docker://chrishah/r-docker:latest"
+		log:
+			stdout = "results/{sample}/logs/readstats.{sample}.stdout.txt",
+			stderr = "results/{sample}/logs/readstats.{sample}.stderr.txt"
+		output: 
+			stats = "results/{sample}/trimming/direct/{sample}.readstats.txt"
+		threads: 2
+		shadow: "shallow"
+		shell:
+			"""
+			echo -e "$(date)\tGetting read stats" 1> {log.stdout}
+			bin/get_readstats_from_fastqc.sh $(echo {input} | sed 's/ /,/g' | sed 's/.fastqc.status.ok//g') 1> {output.stats} 2> {log.stderr}
+			stats=$(cat {output.stats})
+			echo -e "Cummulative length: $(cat {output.stats} | cut -d " " -f 1)" 1>> {log.stdout} 2>> {log.stderr}
+			echo -e "Average read length: $(cat {output.stats} | cut -d " " -f 2)\\n" 1>> {log.stdout} 2>> {log.stderr}
+			echo -e "$(date)\tDone!" 1>> {log.stdout}
+			"""
+	rule eva_kmc_direct:
+		input:
+			f_paired = lambda wildcards: expand("results/{{sample}}/Illumina/raw_reads/from_fastq/{lib}/{{sample}}.{lib}.raw.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+			r_paired = lambda wildcards: expand("results/{{sample}}/Illumina/raw_reads/from_fastq/{lib}/{{sample}}.{lib}.raw.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		params:
+			sample = "{sample}",
+			k = "{k}",
+			max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+			mincount = config["kmc"]["mincount"],
+			maxcount = config["kmc"]["maxcount"],
+			maxcounter = config["kmc"]["maxcounter"],
+			nbin = 64,
+		threads: config["threads"]["kmc"]
+		singularity:
+			"docker://chrishah/kmc3-docker:v3.0"
+		log:
+			stdout = "results/{sample}/logs/kmc.{sample}.k{k}.stdout.txt",
+			stderr = "results/{sample}/logs/kmc.{sample}.k{k}.stderr.txt"
+		output: 
+	#		pre = "results/{sample}/kmc/{sample}.k{k}.kmc_pre",
+	#		suf = "results/{sample}/kmc/{sample}.k{k}.kmc_suf",
+			hist = "results/{sample}/kmc/{sample}.k{k}.histogram.txt",
+			genomescope = "results/{sample}/kmc/{sample}.k{k}.histogram.genomescope.txt"
+		shadow: "minimal"
+		shell:
+			"""
+			echo -e "$(date)\tStarting kmc"
+			## add all files that are not empty to file of filenames
+			for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done > fastqs.txt
+			mkdir {params.sample}.db
+			kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
+			#kmc_tools histogram {params.sample} -ci{params.mincount} -cx{params.maxcount} {output.hist}
+			kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
+			cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
+			"""
+	rule eva_plot_k_hist_direct:
+		input:
+			hist = rules.eva_kmc_direct.output.hist,
+			stats = rules.eva_stats_direct.output.stats
+		output:
+			full = "results/{sample}/plots/{sample}-k{k}-distribution-full.pdf",		
+		params:
+			sample = "{sample}",
+			k = "{k}",
+			script = "bin/plot.freq.in.R"
+		singularity:
+			"docker://chrishah/r-docker:latest"
+		log:
+			stdout = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stdout.txt",
+			stderr = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stderr.txt"
+		shadow: "shallow"
+		shell:
+			"""
+			stats=$(cat {input.stats})
+			echo -e "Cummulative length: $(echo -e "$stats" | cut -d " " -f 1)"
+			echo -e "Average read length: $(echo -e "$stats" | cut -d " " -f 2)"
+			Rscript {params.script} {input.hist} {params.sample} {params.k} $stats 1> {log.stdout} 2> {log.stderr}
+			cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
+			"""
+
+else:
+	rule eva_fastqc_raw:
+		input:
+			forward = input_for_trimgalore_f,
+			reverse = input_for_trimgalore_r,
+		params:
+			wd = os.getcwd(),
+			lib = "{lib}",
+			sample = "{sample}",
+		singularity:
+			"docker://chrishah/trim_galore:0.6.0"
+		log:
+			stdout = "results/{sample}/logs/fastqc_raw.{sample}.{lib}.stdout.txt",
+			stderr = "results/{sample}/logs/fastqc_raw.{sample}.{lib}.stderr.txt"
+		output:
+			ok = "results/{sample}/read_qc/fastqc_raw/{lib}/{sample}.{lib}.status.ok",
+		shadow: "minimal"
+		threads: 2
+		shell:
+			"""
+			fastqc -o ./ {input} 1> {log.stdout} 2> {log.stderr}
+			mv *.zip *.html {params.wd}/results/{params.sample}/read_qc/fastqc_raw/{params.lib}/
+			touch {output}
+			"""
+
+	rule eva_fastqc_trimmed:
+		input:
+			f_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.1.fastq.gz",
+			r_paired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.2.fastq.gz",
+			f_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.1.fastq.gz",
+			r_unpaired = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.unpaired.2.fastq.gz"
+		params:
+			wd = os.getcwd(),
+			lib = "{lib}",
+			sample = "{sample}",
+		singularity:
+			"docker://chrishah/trim_galore:0.6.0"
+		log:
+			stdout = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stdout.txt",
+			stderr = "results/{sample}/logs/fastqc_trimgalore.{sample}.{lib}.stderr.txt"
+		output:
+			ok = "results/{sample}/trimming/trimgalore/{lib}/{sample}.{lib}.fastqc.status.ok",
+		shadow: "minimal"
+		threads: 2
+		shell:
+			"""
+			for f in $(echo "{input}"); do if [[ -s $f ]]; then fastqc -t {threads} -o ./ $f; fi; done 1> {log.stdout} 2> {log.stderr}
+			mv *.zip *.html {params.wd}/results/{params.sample}/trimming/trimgalore/{params.lib}/
+			touch {output}
+			
+			"""
+	rule eva_stats:
+		input:
+			lambda wildcards: expand(rules.eva_fastqc_trimmed.output.ok, sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist())))
+		singularity:
+			"docker://chrishah/r-docker:latest"
+		log:
+			stdout = "results/{sample}/logs/readstats.{sample}.stdout.txt",
+			stderr = "results/{sample}/logs/readstats.{sample}.stderr.txt"
+		output: 
+			stats = "results/{sample}/trimming/trimgalore/{sample}.readstats.txt"
+		threads: 2
+		shadow: "shallow"
+		shell:
+			"""
+			echo -e "$(date)\tGetting read stats" 1> {log.stdout}
+			bin/get_readstats_from_fastqc.sh $(echo {input} | sed 's/ /,/g' | sed 's/.fastqc.status.ok//g') 1> {output.stats} 2> {log.stderr}
+			stats=$(cat {output.stats})
+			echo -e "Cummulative length: $(cat {output.stats} | cut -d " " -f 1)" 1>> {log.stdout} 2>> {log.stderr}
+			echo -e "Average read length: $(cat {output.stats} | cut -d " " -f 2)\\n" 1>> {log.stdout} 2>> {log.stderr}
+			echo -e "$(date)\tDone!" 1>> {log.stdout}
+			"""
+	rule eva_kmc:
+		input:
+			f_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+			r_paired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+			f_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.1.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+			r_unpaired = lambda wildcards: expand("results/{{sample}}/trimming/trimgalore/{lib}/{{sample}}.{lib}.unpaired.2.fastq.gz", sample=wildcards.sample, lib=list(set(unitdict[wildcards.sample]) & set(Illumina_process_df["lib"].tolist()))),
+		params:
+			sample = "{sample}",
+			k = "{k}",
+			max_mem_in_GB = config["kmc"]["max_mem_in_GB"],
+			mincount = config["kmc"]["mincount"],
+			maxcount = config["kmc"]["maxcount"],
+			maxcounter = config["kmc"]["maxcounter"],
+			nbin = 64,
+		threads: config["threads"]["kmc"]
+		singularity:
+			"docker://chrishah/kmc3-docker:v3.0"
+		log:
+			stdout = "results/{sample}/logs/kmc.{sample}.k{k}.stdout.txt",
+			stderr = "results/{sample}/logs/kmc.{sample}.k{k}.stderr.txt"
+		output: 
+	#		pre = "results/{sample}/kmc/{sample}.k{k}.kmc_pre",
+	#		suf = "results/{sample}/kmc/{sample}.k{k}.kmc_suf",
+			hist = "results/{sample}/kmc/{sample}.k{k}.histogram.txt",
+			genomescope = "results/{sample}/kmc/{sample}.k{k}.histogram.genomescope.txt"
+		shadow: "minimal"
+		shell:
+			"""
+			echo -e "$(date)\tStarting kmc"
+			## add all files that are not empty to file of filenames
+			for f in $(echo "{input}"); do if [[ -s $f ]]; then echo "$f"; fi; done > fastqs.txt
+			mkdir {params.sample}.db
+			kmc -k{params.k} -m$(( {params.max_mem_in_GB} - 2 )) -v -sm -ci{params.mincount} -cx{params.maxcount} -cs{params.maxcounter} -n{params.nbin} -t$(( {threads} - 1 )) @fastqs.txt {params.sample} {params.sample}.db 1>> {log.stdout} 2>> {log.stderr}
+			#kmc_tools histogram {params.sample} -ci{params.mincount} -cx{params.maxcount} {output.hist}
+			kmc_tools histogram {params.sample} -ci{params.mincount} {output.hist} 1> /dev/null 2>> {log.stderr}
+			cat {output.hist} | awk '{{print $1" "$2}}' > {output.genomescope}
+			"""
+	rule eva_plot_k_hist:
+		input:
+			hist = rules.eva_kmc.output.hist,
+			stats = rules.eva_stats.output.stats
+		output:
+			full = "results/{sample}/plots/{sample}-k{k}-distribution-full.pdf",		
+		params:
+			sample = "{sample}",
+			k = "{k}",
+			script = "bin/plot.freq.in.R"
+		singularity:
+			"docker://chrishah/r-docker:latest"
+		log:
+			stdout = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stdout.txt",
+			stderr = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stderr.txt"
+		shadow: "shallow"
+		shell:
+			"""
+			stats=$(cat {input.stats})
+			echo -e "Cummulative length: $(echo -e "$stats" | cut -d " " -f 1)"
+			echo -e "Average read length: $(echo -e "$stats" | cut -d " " -f 2)"
+			Rscript {params.script} {input.hist} {params.sample} {params.k} $stats 1> {log.stdout} 2> {log.stderr}
+			cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
+			"""
+
+# these parts only work when data is trimmed as part of the pipeline so far
 
 rule fil_kmc_create_db:
 	input:
@@ -482,30 +644,6 @@ rule reformat_read_headers:
 		touch {output.ok}
 		"""
 
-rule eva_plot_k_hist:
-	input:
-		hist = rules.eva_kmc.output.hist,
-		stats = rules.eva_stats.output.stats
-	output:
-		full = "results/{sample}/plots/{sample}-k{k}-distribution-full.pdf",		
-	params:
-		sample = "{sample}",
-		k = "{k}",
-		script = "bin/plot.freq.in.R"
-	singularity:
-		"docker://chrishah/r-docker:latest"
-	log:
-		stdout = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stdout.txt",
-		stderr = "results/{sample}/logs/plotkmerhist.{sample}.k{k}.stderr.txt"
-	shadow: "shallow"
-	shell:
-		"""
-		stats=$(cat {input.stats})
-		echo -e "Cummulative length: $(echo -e "$stats" | cut -d " " -f 1)"
-		echo -e "Average read length: $(echo -e "$stats" | cut -d " " -f 2)"
-		Rscript {params.script} {input.hist} {params.sample} {params.k} $stats 1> {log.stdout} 2> {log.stderr}
-		cp {params.sample}-k{params.k}-distribution* results/{params.sample}/plots/
-		"""
 
 
 rule clean_corrected_libs:
