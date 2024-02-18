@@ -1,22 +1,22 @@
-def def_or_data(string,sample):
-	print(string)
-	elements = string.split("|")
-	default = config[elements[0]]
-	print("the dict is: "+str(default))
-	for i in range(1,len(elements)):
-		print("current key is: "+elements[i])
-		current = elements[i]
-		print(current)
-		print(current,i,default[current])
-		default = default[current]
-	
-	print("after loop: "+default)
-	if "-".join(elements) in df:
-		print("-".join(elements)+" is there")
-		print(df.set_index(['sample']))
+#def def_or_data(string,sample):
+#	print(string)
+#	elements = string.split("|")
+#	default = config[elements[0]]
+#	print("the dict is: "+str(default))
+#	for i in range(1,len(elements)):
+#		print("current key is: "+elements[i])
+#		current = elements[i]
+#		print(current)
+#		print(current,i,default[current])
+#		default = default[current]
+#	
+##	print("after loop: "+default)
+#	if "-".join(elements) in df:
+#		print("-".join(elements)+" is there")
+#		print(df.set_index(['sample']))
 
 	
-def_or_data("ont_basecalling|guppy|flowcell","EcStj")
+#def_or_data("ont_basecalling|guppy|flowcell","EcStj")
 #./demogenas -m assemble -t slurm -s "-pr --until bca_guppy" --clusterconfig=data/testdata/test.cluster.SLURM --configfile=data/config.Eubo -i "-B $DATA -B $BINFL" --select="EcStj,EsKje_Sa_w" --dry
 
 rule bca_guppy:
@@ -49,9 +49,6 @@ rule bca_guppy:
 		step={params.nbatches}
 		count=0
 		echo "$(date)"
-#		filecount=$(ls -1rt {input.dir} | wc -l)
-#		if [[ $unit -le $filecount ]]
-#		then
 		for f in $(ls -1rt {params.wd}/{input.dir} | sed -n "$unit~$step p")
 		do
 			echo -e "\\n$(date) - Processing file $f (temp suffix: $unit-$count)"
@@ -73,10 +70,6 @@ rule bca_guppy:
 		cat $unit-*fastq.gz > $unit.min-{params.minlength}.fastq.gz
 		rm $unit-*fastq.gz
 		ln -s $unit.min-{params.minlength}.fastq.gz {params.wd}/{output.fastq}
-#	else
-#		echo -e "\\n$(date) - there are only $filecount files to process - creating dummyfile '{params.wd}/{output.fastq}' and finishing up" > {params.wd}/{log.stdout}
-#		touch {params.wd}/{output.fastq} 2> {params.wd}/{log.stderr}
-#	fi
 		"""
 
 rule bca_bonito_cpu:
@@ -158,35 +151,29 @@ rule bca_flappie:
 #			perl -ne '$h=$_; $s=<>; $p=<>; $q=<>; if (length($s) > {params.minlength}){{print "$h$s$p$q"}}' | gzip > ../../../../../../{output.fastq} 1> ../../../../../../{log.stdout} 2> ../../../../../{log.stderr}
 #		rm -rf $unit
 
-#		filecount=$(ls -1rt {input.dir} | wc -l)
-#		if [[ $unit -le $filecount ]]
-#		then
-			for f in $(ls -1rt {input.dir} | sed -n "$unit~$step p")
-			do
-				echo -e "\\n$(date) - Processing file $f (temp suffix: $unit-$count)"
-				if [ ! -f $unit-$count.min-{params.minlength}.fastq.gz ]
-				then
-					if [ -d $unit-$count ]; then rm -rf $unit-$count/*; else mkdir $unit-$count; fi
-					echo -e "$(date) - converting fast5"
-					multi_to_single_fast5 -i {input.dir}/$f -t {threads} -s $unit-$count/
-					echo -e "$(date) - basecalling"
-					flappie --model={params.model} $unit-$count/*/ | \
-						perl -ne '$h=$_; $s=<>; $p=<>; $q=<>; if (length($s) > {params.minlength}){{print "$h$s$p$q"}}' | gzip > $unit-$count.min-{params.minlength}.fastq.gz.tmp
-					mv $unit-$count.min-{params.minlength}.fastq.gz.tmp $unit-$count.min-{params.minlength}.fastq.gz
-					rm -rf $unit-$count
-				fi
-				let "count+=1"
-				echo -e "$(date) - Done"
-			done 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
-	
-			cat $unit-*fastq.gz > $unit.min-{params.minlength}.fastq.gz
-			rm $unit-*fastq.gz
-			ln -s $unit.min-{params.minlength}.fastq.gz {params.wd}/{output.fastq}
-#		else
-#			echo -e "\\n$(date) - there are only $filecount files to process - creating dummyfile '{params.wd}/{output.fastq}' and finishing up" > {params.wd}/{log.stdout}
-#			touch {params.wd}/{output.fastq} 2> {params.wd}/{log.stderr}
-#		fi
+		for f in $(ls -1rt {input.dir} | sed -n "$unit~$step p")
+		do
+			echo -e "\\n$(date) - Processing file $f (temp suffix: $unit-$count)"
+			if [ ! -f $unit-$count.min-{params.minlength}.fastq.gz ]
+			then
+				if [ -d $unit-$count ]; then rm -rf $unit-$count/*; else mkdir $unit-$count; fi
+				echo -e "$(date) - converting fast5"
+				multi_to_single_fast5 -i {input.dir}/$f -t {threads} -s $unit-$count/
+				echo -e "$(date) - basecalling"
+				flappie --model={params.model} $unit-$count/*/ | \
+					perl -ne '$h=$_; $s=<>; $p=<>; $q=<>; if (length($s) > {params.minlength}){{print "$h$s$p$q"}}' | gzip > $unit-$count.min-{params.minlength}.fastq.gz.tmp
+				mv $unit-$count.min-{params.minlength}.fastq.gz.tmp $unit-$count.min-{params.minlength}.fastq.gz
+				rm -rf $unit-$count
+			fi
+			let "count+=1"
+			echo -e "$(date) - Done"
+		done 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
+
+		cat $unit-*fastq.gz > $unit.min-{params.minlength}.fastq.gz
+		rm $unit-*fastq.gz
+		ln -s $unit.min-{params.minlength}.fastq.gz {params.wd}/{output.fastq}
 		"""
+
 rule bca_x_gather_called_ont_reads:
 	input: 
 		expand("results/{{units.sample}}/reads/ont/{basecaller}/{units.lib}/{{units.sample}}.{basecaller}.{unit}.fastq.gz", basecaller=config["ont_basecalling"]["basecaller"], units=fast5_units.itertuples(), unit=flappie_unit_list)
