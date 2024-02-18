@@ -117,13 +117,16 @@ rule eva_remove_duplicates:
 		outdir = "results/{sample}/assembly_evaluation/mapping/{combination}"
 	singularity:
 		"docker://broadinstitute/picard:2.20.6"
+	log:
+		stdout = "results/{sample}/logs/remove_duplicates.{combination}.stdout.txt",
+		stderr = "results/{sample}/logs/remove_duplicates.{combination}.stderr.txt"
 	threads: 1
 	shell:
 		"""
 		cd {params.outdir}
 		java -jar /usr/picard/picard.jar MarkDuplicates \
 		INPUT={params.sample}.bam OUTPUT={params.sample}.sorted.duprmvd.bam \
-		METRICS_FILE={params.sample}.sorted.duprmvd.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true VALIDATION_STRINGENCY=LENIENT MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000
+		METRICS_FILE={params.sample}.sorted.duprmvd.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true VALIDATION_STRINGENCY=LENIENT MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 1> {params.wd}/{log.stdout} 2> {params.wd}/{log.stderr}
 		rm {params.sample}.bam
 		touch {params.wd}/{output.done}
 		"""
