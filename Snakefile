@@ -42,11 +42,16 @@ rule eval_illumina:
 	input:
 		#fastqc
 		lambda wildcards: expand("results/{test.sample}/read_qc/fastqc_raw/{test.lib}/{test.sample}.{test.lib}.status.ok", test=illumina_units.itertuples()),
-		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.lib}/{test.sample}.{test.lib}.fastqc.status.ok", test=illumina_units.itertuples()),
+#		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.lib}/{test.sample}.{test.lib}.fastqc.status.ok", test=illumina_units.itertuples()),
 		#trim and gather
 		lambda wildcards: expand("results/{test.sample}/trimming/trimgalore/{test.sample}-full/{test.sample}.cat.status.ok", test=illumina_units.itertuples()),
-		expand(rules.eva_plot_k_hist.output, sample=Illumina_process_df["sample"], k=config["kmc"]["k"])
+		expand("results/{sample}/plots/{sample}-k{k}-distribution-full.pdf", sample=Illumina_process_df["sample"], k=config["kmc"]["k"])
 #		lambda wildcards: expand("results/{test.sample}/plots/{test.sample}-k{k}-distribution-full.pdf", test=illumina_units.itertuples(), k=config["kmc"]["k"])
+
+
+rule eval_kmer_plot:
+	input:
+		expand("results/{sample}/plots/{sample}-k{k}-distribution-full.pdf", sample=Illumina_process_df["sample"], k=config["kmc"]["k"])
 
 rule illumina_trim:
 	input:

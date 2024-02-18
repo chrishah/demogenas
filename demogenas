@@ -11,6 +11,7 @@ usage() {
 	echo "  -m <runmode> Determine how far the pipeline should run. Options: assembly, all. Default: all
 	-m trim_illumina
 	-m eval_illumina
+	-m eval_kmer_plot
         -m kmer_filter
 	-m correct_illumina
 	-m merge_illumina
@@ -111,6 +112,9 @@ if [[ $RUNMODE == "trim_illumina" ]]; then
 elif [[ $RUNMODE == "eval_illumina" ]]; then
 	mycmd+=(eval_illumina)
 	printcmd=$printcmd"eval_illumina "
+elif [[ $RUNMODE == "eval_kmer_plot" ]]; then
+	mycmd+=(eval_kmer_plot)
+	printcmd=$printcmd"eval_kmer_plot "
 elif [[ $RUNMODE == "kmer_filter" ]]; then
 	mycmd+=(kmer_filter)
 	printcmd=$printcmd"kmer_filter  "
