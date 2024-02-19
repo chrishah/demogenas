@@ -71,7 +71,7 @@ You can check the different behaviours of the pipeline for different sample/data
 
 Here's the rulegraph of the workflow that would be exectued by the last command above.
 
-<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.all_types.pdf" eight="500">
+<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.all_types.pdf" height="500">
 
 
 Via the config file I control which steps are performed, e.g.:
@@ -104,7 +104,7 @@ If you don't want to go all the way and assemble, there are other modes, such as
 
 The latter command would just trim Illumina reads and calculate and plot kmer frequencies.
 
-<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.eval_kmer_plot.pdf" eight="500">
+<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.eval_kmer_plot.pdf" height="500">
 
 Note that for a sample comprising only fast5 data none of the illumina specific steps will be done. You can try.
 ```bash
