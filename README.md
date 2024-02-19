@@ -69,6 +69,10 @@ You can check the different behaviours of the pipeline for different sample/data
 ./demogenas -t local -m assemble --configfile=data/testdata/test.config.yaml --dry --select=all_types
 ```
 
+Here's the rulegraph of the workflow that would be exectued by the last command above.
+<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.all_types.pdf" eight="500">
+
+
 Via the config file I control which steps are performed, e.g.:
 ```bash
 # process illumina data and assemble with all relevant assemblers
@@ -89,13 +93,16 @@ If you don't want to go all the way and assemble, there are other modes, such as
 ```bash
 # trim illumina data
 ./demogenas -t local -m trim_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
-# trim illumina data and evaluate (fastqc, kmer spectrum)
-./demogenas -t local -m eval_illumina --configfile=data/testdata/test.config.yaml --dry --select=bam_only
 # trim and correct illumina data
 ./demogenas -t local -m correct_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
 # trim, correct and merge illumina dat
 ./demogenas -t local -m merge_illumina --configfile=data/testdata/test.config.yaml --dry --select=fastq_only
+# trim illumina data and evaluate (fastqc, kmer spectrum)
+./demogenas -t local -m eval_kmer_plot --configfile=data/testdata/test.config.yaml --dry --select=fastq_bam
 ```
+
+The latter command would just trim Illumina reads and calculate and plot kmer frequencies.
+<img src="https://github.com/chrishah/demogenas/blob/demo/rulegraph.eval_kmer_plot.pdf" eight="500">
 
 Note that for a sample comprising only fast5 data none of the illumina specific steps will be done. You can try.
 ```bash
@@ -110,11 +117,11 @@ First, run `prepare_assemblies` mode - this will gather all assemblies that are 
 ```bash
 ./demogenas -m prepare_assemblies -t local --configfile=data/testdata/test.config.yaml --select="fastq_bam"
 ```
-Since this is just a demo and no assembly has actually been run yet the above command will not actually trigger any jobs. Snakemake will tell you that there's nothing to be done. However, if any assemblies for this particular sample had been completed we would have gathered them in a particular place now. Check out the content of this target directory:
+Since this is just a demo and no assembly has actually been run yet the above command will not actually trigger any jobs. Snakemake will tell you that there's nothing to be done. However, if any assemblies for this particular sample had been completed the above command would have gathered them in a particular place now. Check out the content of this target directory:
 ```bash
 ls -1 results/fastq_bam/assembly_evaluation/assemblies/
 ```
-You'll see a list of files. These are just empty files now that ship with the repo for the purpose of this demo. Filenames as given by demogenas should be indicate the origin of each file. The principal naming scheme is `<assembler-trimmer-correction-merger>.min<length>.fasta`. The file `platanus-trimgalore-bless-usearch-auto.min1000.fasta" for example was produced via platanus, based on reads trimmed with trimgalore, corrected with bless and merged with usesarch. The assembly has been filtered to retain only scaffolds of a minimum length of 1000bp. If one sticks to the principal naming scheme one can also put in external assemblies for subsequent evaluation, such as the file `something.min1000.fasta`. 
+You'll see a list of files. These are just empty files now that ship with the repo for the purpose of this demo. Filenames as given by demogenas should be indicative of the origin of each file. The principal naming scheme is `<assembler-trimmer-correction-merger>.min<length>.fasta`. The file `platanus-trimgalore-bless-usearch-auto.min1000.fasta` for example was produced via platanus, based on reads trimmed with trimgalore, corrected with bless and merged with usesarch. The assembly has been filtered to retain only scaffolds of a minimum length of 1000bp. If one sticks to the principal naming scheme one can also put in external assemblies for subsequent evaluation, such as the file `something.min1000.fasta`. 
 
 
 Now, to evaluate all assemblies finished at this moment with the methods as specified in the config file, run `evaluate_assemblies` like e.g. so:
